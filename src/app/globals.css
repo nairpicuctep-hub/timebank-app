@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Instrument+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --amber:   #F0A830;
+  --coral:   #E85030;
+  --rose:    #D03878;
+  --mint:    #1ED8A0;
+  --sand:    #F5EDD8;
+  --ink:     #0c0906;
+  --grad:    linear-gradient(135deg, #F0A830, #E85030, #D03878);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: #0c0906;
+  color: #F5EDD8;
+  font-family: 'Instrument Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Grain overlay on body */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gradient text utility */
+.grad-text {
+  background: linear-gradient(135deg, #F0A830, #E85030, #D03878);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient border utility */
+.grad-border {
+  border: 1px solid transparent;
+  background: linear-gradient(#1c1917, #1c1917) padding-box,
+              linear-gradient(135deg, #F0A830, #E85030, #D03878) border-box;
+}
+
+/* TC Orb spin animation */
+@keyframes orbSpin {
+  to { transform: rotate(360deg); }
+}
+@keyframes orbSpinRev {
+  to { transform: rotate(-360deg); }
+}
+.orb-outer { animation: orbSpin 8s linear infinite; }
+.orb-inner { animation: orbSpinRev 8s linear infinite; }
+
+/* Fade up animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.5s ease forwards; }
+.fade-up-1 { animation: fadeUp 0.5s 0.1s ease both; }
+.fade-up-2 { animation: fadeUp 0.5s 0.2s ease both; }
+.fade-up-3 { animation: fadeUp 0.5s 0.3s ease both; }
+.fade-up-4 { animation: fadeUp 0.5s 0.4s ease both; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(245,237,216,0.12); border-radius: 2px; }
+
+/* Input base */
+input, textarea, select {
+  background: #242018;
+  border: 1px solid rgba(245,237,216,0.08);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #F5EDD8;
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: #F0A830;
+}
+input::placeholder { color: #9a8f82; }
