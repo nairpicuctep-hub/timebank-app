@@ -1,51 +1,65 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
 
-export default async function WalletPage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth')
+const reasonLabel: Record<string, string> = {
+  session_earned: 'Taught a session',
+  session_spent:  'Booked a session',
+  admin_grant:    'Admin grant',
+  monthly_drip:   'Monthly credits',
+  welcome_bonus:  'Welcome bonus',
+  referral_bonus: 'Referral bonus',
+  refund:         'Session refund',
+  penalty:        'Penalty',
+  adjustment:     'Balance adjustment',
+}
 
-  const [balanceRes, txRes] = await Promise.all([
-    supabase.rpc('get_balance', { p_user_id: user.id }),
-    supabase.from('tc_ledger')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20)
-  ])
+export default function WalletPage() {
+  const [balance, setBalance] = useState({ available_balance: 0, escrowed_balance: 0 })
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-  const balance = balanceRes.data?.[0] || { available_balance: 0, escrowed_balance: 0 }
-  const transactions = txRes.data || []
+  useEffect(() => {
+    const supabase = createClient()
+    async function load() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.push('/auth'); return }
 
-  const reasonLabel: Record<string, string> = {
-    session_earned: 'Taught a session',
-    session_spent:  'Booked a session',
-    admin_grant:    'Admin grant',
-    monthly_drip:   'Monthly credits',
-    welcome_bonus:  'Welcome bonus',
-    referral_bonus: 'Referral bonus',
-    refund:         'Session refund',
-    penalty:        'Penalty',
-    adjustment:     'Balance adjustment',
-  }
+      const [balanceRes, txRes] = await Promise.all([
+        supabase.rpc('get_balance', { p_user_id: session.user.id }),
+        supabase.from('tc_ledger')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(20)
+      ])
+
+      setBalance(balanceRes.data?.[0] || { available_balance: 0, escrowed_balance: 0 })
+      setTransactions(txRes.data || [])
+      setLoading(false)
+    }
+    load()
+  }, [router])
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-sm font-mono" style={{ color: '#9a8f82' }}>Loading…</p>
+    </div>
+  )
 
   return (
     <div className="min-h-screen pb-24 px-5 pt-14">
-
       <h1 className="font-display text-3xl font-light mb-6 fade-up">TimeCredits ◈</h1>
 
-      {/* Balance hero */}
       <div className="rounded-3xl p-7 mb-6 relative overflow-hidden fade-up-1"
         style={{ background: 'linear-gradient(135deg, #F0A830, #E85030, #D03878)' }}>
         <div className="absolute right-[-20px] bottom-[-30px] font-display text-[140px] leading-none opacity-[0.08] pointer-events-none select-none">◎</div>
-        <div className="text-xs font-mono uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>
-          Available balance
-        </div>
-        <div className="font-display text-6xl font-light text-white leading-none">
-          {balance.available_balance}
-        </div>
+        <div className="text-xs font-mono uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Available balance</div>
+        <div className="font-display text-6xl font-light text-white leading-none">{balance.available_balance}</div>
         <div className="text-xs mt-2" style={{ color: 'rgba(255,255,255,0.7)' }}>
           ≈ {balance.available_balance} hours of learning anywhere on Earth
         </div>
@@ -56,7 +70,7 @@ export default async function WalletPage() {
         )}
         <div className="flex gap-2 mt-5">
           {['Earn more', 'History', 'Go Premium'].map(label => (
-            <button key={label} className="flex-1 py-2 rounded-xl text-xs font-medium text-white transition-opacity hover:opacity-80"
+            <button key={label} className="flex-1 py-2 rounded-xl text-xs font-medium text-white"
               style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}>
               {label}
             </button>
@@ -64,7 +78,6 @@ export default async function WalletPage() {
         </div>
       </div>
 
-      {/* Premium upsell */}
       <div className="rounded-2xl p-5 mb-6 flex items-center gap-4 fade-up-2"
         style={{ background: '#1c1917', border: '1px solid rgba(240,168,48,0.2)' }}>
         <div className="text-2xl">✦</div>
@@ -78,11 +91,8 @@ export default async function WalletPage() {
         </button>
       </div>
 
-      {/* Transaction list */}
       <div className="fade-up-2" style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.08)', borderRadius: '20px', overflow: 'hidden' }}>
-        <div className="px-5 py-4 font-display text-lg" style={{ borderBottom: '1px solid rgba(245,237,216,0.06)' }}>
-          Activity
-        </div>
+        <div className="px-5 py-4 font-display text-lg" style={{ borderBottom: '1px solid rgba(245,237,216,0.06)' }}>Activity</div>
         {transactions.length === 0 ? (
           <div className="px-5 py-8 text-center text-sm text-muted">
             No transactions yet — teach your first session to earn TC!
@@ -111,7 +121,6 @@ export default async function WalletPage() {
           ))
         )}
       </div>
-
       <BottomNav active="wallet" />
     </div>
   )
