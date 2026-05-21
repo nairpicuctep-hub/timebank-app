@@ -84,7 +84,9 @@ export default function OnboardingPage() {
     ]
 
     if (rows.length > 0) {
-      await supabase.from('user_skills').upsert(rows, { onConflict: 'user_id,skill_id,role' })
+      // Delete existing skills first, then insert fresh
+      await supabase.from('user_skills').delete().eq('user_id', session.user.id)
+      await supabase.from('user_skills').insert(rows)
     }
 
     await supabase.rpc('award_badge', { p_user_id: session.user.id, p_badge_id: 'skill_mirror' })
