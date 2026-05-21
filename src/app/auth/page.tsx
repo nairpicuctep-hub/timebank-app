@@ -22,7 +22,16 @@ export default function AuthPage() {
     setLoading(true); setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (error) { setError(error.message); return }
+    if (error) {
+      if (error.message.includes('Email not confirmed')) {
+        setError('Please check your email and confirm your account first.')
+      } else if (error.message.includes('Invalid login credentials')) {
+        setError('Wrong email or password.')
+      } else {
+        setError(error.message)
+      }
+      return
+    }
     router.push('/auth/confirm')
   }
 
@@ -33,16 +42,32 @@ export default function AuthPage() {
       setError('Password must be at least 8 characters')
       setLoading(false); return
     }
-    const { error } = await supabase.auth.signUp({
-      email, password,
+
+    // Sign up without email confirmation requirement
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
       options: {
         data: { full_name: name },
-        emailRedirectTo: `${location.origin}/auth/confirm`
+        // No emailRedirectTo = Supabase won't require confirmation if disabled
       }
     })
+
     setLoading(false)
-    if (error) { setError(error.message); return }
-    setSuccess('Check your inbox — we sent you a confirmation link. Click it to activate your account.')
+
+    if (error) {
+      setError(error.message)
+      return
+    }
+
+    // If session exists immediately, user is auto-confirmed
+    if (data.session) {
+      router.push('/auth/confirm')
+      return
+    }
+
+    // Otherwise show success but let them try logging in
+    setSuccess('Account created! You can now sign in with your email and password.')
   }
 
   async function handleForgot(e: React.FormEvent) {
@@ -71,7 +96,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      {/* Background glows */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 right-1/4 w-96 h-96 rounded-full opacity-10"
           style={{ background: 'radial-gradient(ellipse, #F0A830 0%, transparent 70%)' }} />
@@ -80,7 +104,6 @@ export default function AuthPage() {
       </div>
 
       <div className="w-full max-w-sm relative z-10">
-        {/* Logo */}
         <div className="text-center mb-8 fade-up">
           <div className="font-display text-3xl font-light mb-1">time<em>bank</em></div>
           <div className="text-xs text-muted font-mono tracking-widest uppercase">academy</div>
@@ -89,7 +112,6 @@ export default function AuthPage() {
         <div className="fade-up-1"
           style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.08)', borderRadius: '24px', padding: '32px' }}>
 
-          {/* Mode tabs */}
           {mode !== 'forgot' && (
             <div className="flex mb-6" style={{ background: '#242018', borderRadius: '12px', padding: '4px' }}>
               {(['login','signup'] as Mode[]).map(m => (
@@ -111,21 +133,21 @@ export default function AuthPage() {
           {success ? (
             <div className="text-center py-4">
               <div className="text-3xl mb-3">✦</div>
-              <p className="text-sm leading-relaxed" style={{ color: '#1ED8A0' }}>{success}</p>
+              <p className="text-sm leading-relaxed mb-4" style={{ color: '#1ED8A0' }}>{success}</p>
               <button onClick={() => { setSuccess(''); setMode('login') }}
-                className="text-xs font-mono mt-4" style={{ color: '#9a8f82' }}>
-                ← Back to sign in
+                className="w-full py-3 rounded-xl text-white text-sm font-medium"
+                style={{ background: 'linear-gradient(135deg, #F0A830, #E85030, #D03878)' }}>
+                Sign in now →
               </button>
             </div>
           ) : (
             <>
-              {/* Email + password form */}
               <form onSubmit={mode === 'login' ? handleEmailLogin : mode === 'signup' ? handleSignup : handleForgot}>
                 {mode === 'signup' && (
                   <div className="mb-3">
                     <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-1.5">Full name</label>
                     <input type="text" value={name} onChange={e => setName(e.target.value)}
-                      placeholder="Ciprian Petcu" required />
+                      placeholder="Your name" required />
                   </div>
                 )}
 
@@ -176,7 +198,7 @@ export default function AuthPage() {
                   </div>
 
                   <button onClick={handleGoogle}
-                    className="w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 mb-3 transition-all"
+                    className="w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 mb-3"
                     style={{ background: '#242018', border: '1px solid rgba(245,237,216,0.08)', color: '#F5EDD8' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -187,7 +209,6 @@ export default function AuthPage() {
                     Continue with Google
                   </button>
 
-                  {/* LinkedIn placeholder */}
                   <button disabled
                     className="w-full py-3 rounded-xl text-sm flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
                     style={{ background: '#242018', border: '1px solid rgba(245,237,216,0.08)', color: '#F5EDD8' }}>
@@ -200,7 +221,7 @@ export default function AuthPage() {
           )}
         </div>
 
-        <p className="text-center text-xs text-muted mt-6 fade-up-2">
+        <p className="text-center text-xs text-muted mt-6">
           By continuing you agree to our{' '}
           <a href="https://timebank.academy/terms" style={{ color: '#F0A830' }}>Terms</a>
           {' '}and{' '}
