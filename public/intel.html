@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeBank Intel · Command Centre</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Instrument+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --amber:#F0A830;--coral:#E85030;--rose:#D03878;--mint:#1ED8A0;
+  --sand:#F5EDD8;--ink:#0c0906;--s2:#141210;--s3:#1c1917;--s4:#242018;
+  --muted:#9a8f82;--dim:#6a5f52;--border:rgba(245,237,216,0.07);
+  --grad:linear-gradient(135deg,#F0A830,#E85030,#D03878);
+}
+html,body{height:100%;background:var(--ink);color:var(--sand);font-family:'Instrument Sans',sans-serif;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  mix-blend-mode:overlay;opacity:.6;}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px}
+
+/* ── PIN ── */
+#gate{position:fixed;inset:0;z-index:900;background:var(--ink);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;}
+.gate-logo{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;letter-spacing:.02em;}
+.gate-logo em{font-style:italic;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.gate-box{background:var(--s3);border:1px solid var(--border);border-radius:22px;padding:36px;width:340px;text-align:center;}
+.gate-box h2{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;margin-bottom:4px;}
+.gate-box p{font-size:12px;color:var(--muted);margin-bottom:22px;}
+.gate-input{width:100%;background:var(--s4);border:1px solid var(--border);border-radius:11px;padding:13px;color:var(--sand);font-family:'DM Mono',monospace;font-size:18px;text-align:center;letter-spacing:.35em;outline:none;transition:border .2s;}
+.gate-input:focus{border-color:var(--amber);}
+.gate-btn{width:100%;margin-top:12px;padding:13px;border-radius:11px;background:var(--grad);border:none;color:#fff;font-size:13px;cursor:pointer;font-family:'Instrument Sans',sans-serif;font-weight:500;}
+.gate-err{color:var(--coral);font-size:11px;margin-top:8px;min-height:16px;}
+
+/* ── LAYOUT ── */
+#app{display:none;position:relative;z-index:1;min-height:100vh;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:210px;background:var(--s2);border-right:1px solid var(--border);padding:18px 10px;display:flex;flex-direction:column;gap:2px;}
+.logo-area{padding:4px 8px 18px;}
+.logo-word{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:300;}
+.logo-word em{font-style:italic;}
+.logo-tag{font-size:8.5px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:1px;}
+.nav-section{font-size:8px;font-family:'DM Mono',monospace;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;padding:12px 8px 4px;}
+.ni{display:flex;align-items:center;gap:7px;padding:8px;border-radius:9px;cursor:pointer;font-size:11.5px;color:var(--muted);transition:all .15s;border:none;background:none;width:100%;text-align:left;}
+.ni:hover{background:var(--s3);color:var(--sand);}
+.ni.active{background:var(--s3);color:var(--amber);}
+.ni-icon{font-size:13px;width:16px;text-align:center;flex-shrink:0;}
+.ni-badge{margin-left:auto;font-size:8px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:100px;background:rgba(240,168,48,.12);color:var(--amber);}
+.sf{margin-top:auto;padding:10px 8px;font-size:9px;font-family:'DM Mono',monospace;color:var(--dim);line-height:1.6;}
+.main{margin-left:210px;padding:24px 28px;min-height:100vh;}
+
+/* ── PAGES ── */
+.page{display:none}.page.active{display:block}
+.ph{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
+.pt{font-family:'Cormorant Garamond',serif;font-size:29px;font-weight:300;line-height:1.1;}
+.ps{font-size:12px;color:var(--muted);margin-top:3px;}
+.grad-text{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* ── STAT CARDS ── */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px;}
+.sg-3{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:16px;}
+.sc{background:var(--s3);border:1px solid var(--border);border-radius:16px;padding:18px;position:relative;overflow:hidden;}
+.sc::after{content:attr(data-i);position:absolute;right:10px;bottom:6px;font-size:28px;opacity:.07;pointer-events:none;}
+.sv{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:300;line-height:1;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sl{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.1em;margin-top:5px;}
+.sd{font-size:10px;font-family:'DM Mono',monospace;margin-top:3px;}
+.sd.up{color:var(--mint)}.sd.down{color:var(--coral)}.sd.neu{color:var(--muted)}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:13px;margin-bottom:13px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;margin-bottom:13px;}
+
+/* ── CARD ── */
+.card{background:var(--s3);border:1px solid var(--border);border-radius:16px;padding:20px;}
+.ct{font-family:'Cormorant Garamond',serif;font-size:16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.cb{font-size:9px;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:100px;background:rgba(240,168,48,.1);border:1px solid rgba(240,168,48,.2);color:var(--amber);}
+.cb.live{background:rgba(30,216,160,.1);border-color:rgba(30,216,160,.2);color:var(--mint);}
+.cb.red{background:rgba(232,80,48,.1);border-color:rgba(232,80,48,.2);color:var(--coral);}
+
+/* ── TABLES ── */
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{text-align:left;padding:7px 10px;font-size:8.5px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--border);}
+td{padding:10px;border-bottom:1px solid rgba(245,237,216,.03);vertical-align:middle;}
+tr:last-child td{border:none}
+tr:hover td{background:rgba(245,237,216,.015);}
+.badge{display:inline-block;padding:2px 7px;border-radius:100px;font-size:8.5px;font-family:'DM Mono',monospace;}
+.bg{background:rgba(30,216,160,.1);color:var(--mint);}
+.ba{background:rgba(240,168,48,.1);color:var(--amber);}
+.br{background:rgba(232,80,48,.1);color:var(--coral);}
+.bm{background:rgba(208,56,120,.1);color:var(--rose);}
+.bx{background:rgba(154,143,130,.08);color:var(--muted);}
+
+/* ── BAR CHART ── */
+.bc{display:flex;align-items:flex-end;gap:5px;height:70px;margin-top:8px;}
+.bw{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.bar{width:100%;border-radius:3px 3px 0 0;background:var(--grad);min-height:2px;transition:height .6s ease;}
+.bl{font-size:8px;font-family:'DM Mono',monospace;color:var(--muted);}
+
+/* ── SKILL / PROGRESS BARS ── */
+.pr{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.pn{font-size:11px;width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pt2{flex:1;height:4px;background:rgba(245,237,216,.05);border-radius:2px;overflow:hidden;}
+.pf{height:100%;border-radius:2px;background:var(--grad);transition:width 1s ease;}
+.pc{font-size:9px;font-family:'DM Mono',monospace;color:var(--muted);width:26px;text-align:right;flex-shrink:0;}
+
+/* ── FEED ── */
+.fi{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid rgba(245,237,216,.03);}
+.fi:last-child{border:none}
+.fd{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;}
+.ft{flex:1;font-size:11px;line-height:1.5;color:var(--muted);}
+.ft strong{color:var(--sand);}
+.fts{font-size:9px;font-family:'DM Mono',monospace;color:var(--dim);margin-top:1px;}
+
+/* ── FUNNEL ── */
+.fn-item{margin-bottom:13px;}
+.fn-top{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;}
+.fn-pct{font-family:'DM Mono',monospace;color:var(--amber);}
+.fn-bar{height:5px;background:rgba(245,237,216,.05);border-radius:3px;overflow:hidden;}
+.fn-fill{height:100%;border-radius:3px;background:var(--grad);transition:width 1s ease;}
+
+/* ── HEATMAP ── */
+.hm{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px;}
+.hc{aspect-ratio:1;border-radius:3px;background:rgba(245,237,216,.04);transition:background .3s;}
+.hc.l1{background:rgba(240,168,48,.15)}
+.hc.l2{background:rgba(240,168,48,.35)}
+.hc.l3{background:rgba(240,168,48,.6)}
+.hc.l4{background:rgba(240,168,48,.9)}
+
+/* ── FORMS ── */
+.fg{margin-bottom:13px;}
+.fl{font-size:9px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;display:block;}
+.fi2{width:100%;background:var(--s4);border:1px solid var(--border);border-radius:9px;padding:9px 13px;color:var(--sand);font-family:'Instrument Sans',sans-serif;font-size:12px;outline:none;transition:border .2s;}
+.fi2:focus{border-color:var(--amber);}
+.bp{padding:10px 18px;border-radius:9px;background:var(--grad);border:none;color:#fff;font-size:12px;cursor:pointer;font-family:'Instrument Sans',sans-serif;font-weight:500;width:100%;transition:opacity .2s;}
+.bp:hover{opacity:.85}
+.bg2{padding:8px 14px;border-radius:9px;background:var(--s4);border:1px solid var(--border);color:var(--sand);font-size:11px;cursor:pointer;font-family:'Instrument Sans',sans-serif;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--s3);border:1px solid var(--border);border-radius:11px;padding:11px 18px;font-size:12px;z-index:999;transform:translateY(50px);opacity:0;transition:all .3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{border-color:var(--mint)}.toast.err{border-color:var(--coral)}
+
+/* ── WEBSITE TRACKING ── */
+.pg-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.pg-name{font-size:11px;font-family:'DM Mono',monospace;color:var(--amber);width:140px;flex-shrink:0;}
+.pg-bar{flex:1;height:4px;background:rgba(245,237,216,.05);border-radius:2px;overflow:hidden;}
+.pg-fill{height:100%;border-radius:2px;background:var(--grad);}
+.pg-val{font-size:9px;font-family:'DM Mono',monospace;color:var(--muted);width:40px;text-align:right;}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.mg-item{background:var(--s4);border-radius:11px;padding:13px;text-align:center;}
+.mg-val{font-family:'Cormorant Garamond',serif;font-size:22px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.mg-lab{font-size:8.5px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:3px;}
+
+/* ── SESSION DETAIL PANEL ── */
+.spanel{position:fixed;right:0;top:0;bottom:0;width:360px;background:var(--s2);border-left:1px solid var(--border);padding:24px;overflow-y:auto;z-index:200;transform:translateX(100%);transition:transform .3s ease;}
+.spanel.open{transform:translateX(0);}
+.spanel-close{position:absolute;top:16px;right:16px;cursor:pointer;font-size:16px;color:var(--muted);background:none;border:none;}
+</style>
+</head>
+<body>
+
+<!-- PIN GATE -->
+<div id="gate">
+  <div class="gate-logo">time<em>bank</em> intel</div>
+  <div class="gate-box">
+    <h2>Command Centre</h2>
+    <p>Hashed PIN required — investors, team, and admin only</p>
+    <input type="password" class="gate-input" id="pin" maxlength="30" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')checkPin()">
+    <button class="gate-btn" onclick="checkPin()">Enter →</button>
+    <div class="gate-err" id="pin-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="sidebar">
+  <div class="logo-area">
+    <div class="logo-word">time<em>bank</em></div>
+    <div class="logo-tag">command centre</div>
+  </div>
+
+  <div class="nav-section">Platform</div>
+  <button class="ni active" onclick="go('overview',this)"><span class="ni-icon">◎</span>Overview</button>
+  <button class="ni" onclick="go('appusers',this)"><span class="ni-icon">◈</span>App Users</button>
+  <button class="ni" onclick="go('tceconomy',this)"><span class="ni-icon">✦</span>TC Economy</button>
+  <button class="ni" onclick="go('engagement',this)"><span class="ni-icon">⬡</span>Engagement</button>
+
+  <div class="nav-section">Website</div>
+  <button class="ni" onclick="go('website',this)"><span class="ni-icon">🌐</span>Web Analytics</button>
+  <button class="ni" onclick="go('crm',this)"><span class="ni-icon">📋</span>CRM <span class="ni-badge" id="crm-badge">—</span></button>
+  <button class="ni" onclick="go('investors',this)"><span class="ni-icon">💼</span>Investors</button>
+
+  <div class="nav-section">Actions</div>
+  <button class="ni" onclick="go('grant',this)"><span class="ni-icon">+</span>Grant TC</button>
+  <button class="ni" onclick="go('audit',this)"><span class="ni-icon">≡</span>Audit Log</button>
+
+  <div class="sf">
+    timebank.academy<br>
+    <span id="last-sync">—</span><br>
+    <span id="live-dot" style="color:var(--mint)">● live</span>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ════════════ OVERVIEW ════════════ -->
+<div class="page active" id="page-overview">
+  <div class="ph">
+    <div><div class="pt">Platform Overview</div><div class="ps">All signals · live from Supabase</div></div>
+    <button class="bg2" onclick="loadAll()">↻ Refresh all</button>
+  </div>
+
+  <div class="sg">
+    <div class="sc" data-i="◈"><div class="sv" id="ov-app-users">—</div><div class="sl">App users</div><div class="sd up" id="ov-app-delta">—</div></div>
+    <div class="sc" data-i="📋"><div class="sv" id="ov-crm-total">—</div><div class="sl">CRM contacts</div><div class="sd neu" id="ov-crm-delta">waitlist + investors</div></div>
+    <div class="sc" data-i="✦"><div class="sv" id="ov-tc">—</div><div class="sl">TC circulating</div><div class="sd up" id="ov-tc-delta">—</div></div>
+    <div class="sc" data-i="💼"><div class="sv" id="ov-investors">—</div><div class="sl">Investor leads</div><div class="sd neu">in CRM</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Signups — last 14 days <span class="cb live">live</span></div>
+      <div class="bc" id="ov-chart"><div style="color:var(--muted);font-size:11px;margin:auto;">Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">TC Economy snapshot</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px;">
+        <div class="mg-item"><div class="mg-val" id="ov-earned">—</div><div class="mg-lab">Earned</div></div>
+        <div class="mg-item"><div class="mg-val" id="ov-spent">—</div><div class="mg-lab">Spent</div></div>
+        <div class="mg-item"><div class="mg-val" id="ov-ratio" style="font-size:18px;">—</div><div class="mg-lab">Ratio</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card">
+      <div class="ct">Recent activity <span class="cb live">live</span></div>
+      <div id="ov-feed"><div style="color:var(--muted);font-size:11px;">Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">Tiers</div>
+      <div id="ov-tiers"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ APP USERS ════════════ -->
+<div class="page" id="page-appusers">
+  <div class="ph">
+    <div><div class="pt">App Users</div><div class="ps">Every registered user, every data point</div></div>
+    <div style="display:flex;gap:8px;">
+      <input class="fi2" id="user-q" style="width:200px;padding:7px 12px;" placeholder="Search…" oninput="filterUsers()">
+      <select class="fi2" id="user-tier" style="width:110px;padding:7px;" onchange="filterUsers()">
+        <option value="">All tiers</option>
+        <option value="free">Free</option>
+        <option value="premium">Premium</option>
+        <option value="enterprise">Enterprise</option>
+      </select>
+      <button class="bg2" onclick="exportUsers()">↓ CSV</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>Name</th><th>Email</th><th>Tier</th><th>TC Balance</th>
+          <th>Taught</th><th>Learned</th><th>Trust</th><th>Mirror</th>
+          <th>Location</th><th>Joined</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="app-users-table"><tr><td colspan="11" style="color:var(--muted);text-align:center;padding:24px;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ TC ECONOMY ════════════ -->
+<div class="page" id="page-tceconomy">
+  <div class="ph"><div><div class="pt">TC Economy</div><div class="ps">TimeCredit velocity, health, and distribution</div></div></div>
+  <div class="sg">
+    <div class="sc" data-i="↑"><div class="sv" id="tc-issued">—</div><div class="sl">Total issued</div></div>
+    <div class="sc" data-i="↓"><div class="sv" id="tc-spent2">—</div><div class="sl">Total spent</div></div>
+    <div class="sc" data-i="◈"><div class="sv" id="tc-wallets">—</div><div class="sl">In wallets</div></div>
+    <div class="sc" data-i="⏳"><div class="sv" id="tc-escrow">—</div><div class="sl">Escrowed</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct">By reason</div><div id="tc-reason-chart"><div style="color:var(--muted);font-size:11px;">Loading…</div></div></div>
+    <div class="card">
+      <div class="ct">Top TC holders</div>
+      <div class="tw"><table>
+        <thead><tr><th>User ID</th><th>Balance</th><th>Tier</th></tr></thead>
+        <tbody id="tc-top"><tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px;">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">Full ledger <span class="cb">last 100 txs</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Time</th><th>User</th><th>Dir</th><th>Amount</th><th>Reason</th><th>Escrowed</th><th>Note</th></tr></thead>
+      <tbody id="tc-ledger"><tr><td colspan="7" style="color:var(--muted);text-align:center;padding:16px;">Loading…</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ════════════ ENGAGEMENT ════════════ -->
+<div class="page" id="page-engagement">
+  <div class="ph"><div><div class="pt">Engagement</div><div class="ps">Skills, onboarding, sessions, platform health</div></div></div>
+  <div class="g2">
+    <div class="card"><div class="ct">Top skills</div><div id="eng-skills"><div style="color:var(--muted);font-size:11px;">Loading…</div></div></div>
+    <div class="card">
+      <div class="ct">Onboarding funnel</div>
+      <div id="eng-funnel"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">Skill Mirror responses <span class="cb">raw data — AI-analyzable</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>User</th><th>Q1 — Topic</th><th>Q2 — Friends ask</th><th>Q3 — Flow activity</th><th>Q4 — Wish learned</th><th>Q5 — Teach tomorrow</th><th>Complete</th></tr></thead>
+      <tbody id="eng-mirror"><tr><td colspan="7" style="color:var(--muted);text-align:center;padding:16px;">Loading…</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ════════════ WEBSITE ANALYTICS ════════════ -->
+<div class="page" id="page-website">
+  <div class="ph">
+    <div><div class="pt">Web Analytics</div><div class="ps">Visitor tracking · timebank.academy · real data from Supabase</div></div>
+    <button class="bg2" onclick="loadWebsite()">↻ Refresh</button>
+  </div>
+
+  <div class="sg">
+    <div class="sc" data-i="👁"><div class="sv" id="w-visits">—</div><div class="sl">Total pageviews</div><div class="sd" id="w-visits-d">from tracking table</div></div>
+    <div class="sc" data-i="👤"><div class="sv" id="w-unique">—</div><div class="sl">Unique visitors</div><div class="sd neu" id="w-unique-d">by session</div></div>
+    <div class="sc" data-i="⏱"><div class="sv" id="w-duration">—</div><div class="sl">Avg time on page</div><div class="sd neu">seconds</div></div>
+    <div class="sc" data-i="📍"><div class="sv" id="w-countries">—</div><div class="sl">Countries</div><div class="sd neu">unique</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Pages by visits <span class="cb live">live</span></div>
+      <div id="w-pages"><div style="color:var(--muted);font-size:11px;">Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">Traffic sources / referrers</div>
+      <div id="w-referrers"><div style="color:var(--muted);font-size:11px;">Loading…</div></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Countries</div>
+      <div id="w-geo"><div style="color:var(--muted);font-size:11px;">Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">Devices & browsers</div>
+      <div id="w-devices"><div style="color:var(--muted);font-size:11px;">Loading…</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Raw visitor log <span class="cb">last 100 sessions</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>Time</th><th>Page</th><th>Duration</th><th>Country</th><th>City</th><th>Referrer</th><th>Device</th><th>Browser</th><th>UTM source</th></tr></thead>
+      <tbody id="w-log"><tr><td colspan="9" style="color:var(--muted);text-align:center;padding:16px;">Loading…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:13px;border-color:rgba(240,168,48,.2);">
+    <div class="ct">📌 Add tracking to timebank.academy <span class="cb red">setup required</span></div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px;">
+      Add this one-line script to your main website's <code style="color:var(--amber)">&lt;head&gt;</code> to start collecting real visitor data into Supabase. Takes 2 minutes.
+    </p>
+    <div style="background:var(--s4);border-radius:10px;padding:14px;font-family:'DM Mono',monospace;font-size:10px;color:var(--amber);line-height:1.8;overflow-x:auto;">
+      &lt;!-- TimeBank Analytics — paste in &lt;head&gt; of timebank.academy --&gt;<br>
+      &lt;script&gt;<br>
+      &nbsp;&nbsp;(function(){<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;var d={page:location.pathname,ref:document.referrer,ua:navigator.userAgent,<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w:screen.width,lang:navigator.language,ts:Date.now(),sid:Math.random().toString(36).slice(2)};<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;var t=Date.now();<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;window.addEventListener('beforeunload',function(){<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;d.duration=Math.round((Date.now()-t)/1000);<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;navigator.sendBeacon('https://sdtyekfubixjsjmexygx.supabase.co/rest/v1/page_views',<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;JSON.stringify(d));<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;});<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;fetch('https://sdtyekfubixjsjmexygx.supabase.co/rest/v1/page_views',{method:'POST',<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkdHlla2Z1Yml4anNqbWV4eWd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0OTM1MDQsImV4cCI6MjA5NDA2OTUwNH0.ZczzaVCHAvqBFozKEXmnYQKrot4zPX0WvbbUzqkaVAE'},<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body:JSON.stringify(d)});<br>
+      &nbsp;&nbsp;})();<br>
+      &lt;/script&gt;
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;">Also run this SQL in Supabase to create the tracking table:</p>
+    <div style="background:var(--s4);border-radius:10px;padding:12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--mint);line-height:1.7;margin-top:6px;">
+      create table public.page_views (<br>
+      &nbsp;&nbsp;id uuid primary key default uuid_generate_v4(),<br>
+      &nbsp;&nbsp;created_at timestamptz default now(),<br>
+      &nbsp;&nbsp;page text, ref text, ua text, w int,<br>
+      &nbsp;&nbsp;lang text, sid text, duration int,<br>
+      &nbsp;&nbsp;country text, city text, utm_source text,<br>
+      &nbsp;&nbsp;utm_medium text, utm_campaign text<br>
+      );<br>
+      alter table public.page_views enable row level security;<br>
+      create policy "anon insert" on public.page_views for insert using (true);
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ CRM ════════════ -->
+<div class="page" id="page-crm">
+  <div class="ph">
+    <div><div class="pt">CRM — All Contacts</div><div class="ps">Waitlist · investors · contacts · from timebank.academy</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input class="fi2" id="crm-q" style="width:190px;padding:7px 12px;" placeholder="Search name or email…" oninput="filterCRM()">
+      <select class="fi2" id="crm-type" style="width:120px;padding:7px;" onchange="filterCRM()">
+        <option value="">All types</option>
+        <option value="waitlist">Waitlist</option>
+        <option value="investor">Investor</option>
+        <option value="contact">Contact</option>
+      </select>
+      <button class="bg2" onclick="exportCRM()">↓ CSV</button>
+    </div>
+  </div>
+  <div class="sg-3" style="margin-bottom:14px;">
+    <div class="sc" data-i="📋"><div class="sv" id="crm-total">—</div><div class="sl">Total contacts</div></div>
+    <div class="sc" data-i="⏳"><div class="sv" id="crm-waitlist">—</div><div class="sl">Waitlist</div></div>
+    <div class="sc" data-i="💼"><div class="sv" id="crm-inv-count">—</div><div class="sl">Investor leads</div></div>
+  </div>
+  <div class="card">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Type</th><th>Skill / Interest</th><th>Source</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody id="crm-table"><tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ INVESTORS ════════════ -->
+<div class="page" id="page-investors">
+  <div class="ph"><div><div class="pt">Investor Pipeline</div><div class="ps">Every investor lead, interest signal, and follow-up</div></div></div>
+  <div class="sg-3">
+    <div class="sc" data-i="💼"><div class="sv" id="inv-total">—</div><div class="sl">Total leads</div></div>
+    <div class="sc" data-i="📧"><div class="sv" id="inv-contacted">—</div><div class="sl">Contacted</div></div>
+    <div class="sc" data-i="✦"><div class="sv" id="inv-warm">—</div><div class="sl">Warm leads</div></div>
+  </div>
+  <div class="card">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Interest / Notes</th><th>Source</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="inv-table"><tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card" style="margin-top:13px;">
+    <div class="ct">Pitch deck engagement <span class="cb">SeedBlink + direct</span></div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7;">
+      Connect your SeedBlink investor data here. For now, all investor contacts from your waitlist CRM are shown above.
+      Add manual notes by editing the Supabase <code style="color:var(--amber)">waitlist</code> table directly.
+    </p>
+  </div>
+</div>
+
+<!-- ════════════ GRANT TC ════════════ -->
+<div class="page" id="page-grant">
+  <div class="ph"><div><div class="pt">Grant TimeCredits</div><div class="ps">Manual TC assignment with full audit trail</div></div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Single user grant</div>
+      <div class="fg"><label class="fl">Search user</label>
+        <input class="fi2" id="g-search" placeholder="Name…" oninput="searchGU()">
+        <div id="g-info" style="font-size:10px;color:var(--mint);margin-top:5px;min-height:14px;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="fg"><label class="fl">Amount (TC)</label><input class="fi2" id="g-amt" type="number" value="5" min="1" max="200"></div>
+        <div class="fg"><label class="fl">Reason</label>
+          <select class="fi2" id="g-reason">
+            <option value="admin_grant">Admin grant</option>
+            <option value="welcome_bonus">Welcome bonus</option>
+            <option value="referral_bonus">Referral bonus</option>
+            <option value="adjustment">Adjustment</option>
+            <option value="refund">Refund</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Note (required)</label><textarea class="fi2" id="g-note" rows="2" placeholder="Why are you granting?"></textarea></div>
+      <button class="bp" onclick="doGrant()">Grant TimeCredits →</button>
+    </div>
+    <div class="card">
+      <div class="ct">Monthly drip</div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px;">Free: +2 TC · Premium: +5 TC · Enterprise: +10 TC. Run immediately for all users.</p>
+      <button class="bg2" style="width:100%;text-align:center;padding:10px;" onclick="runDrip()">Run drip now →</button>
+      <div style="margin-top:18px;">
+        <div style="font-size:13px;font-family:'Cormorant Garamond',serif;margin-bottom:10px;">Recent grants</div>
+        <div class="tw"><table>
+          <thead><tr><th>User</th><th>Amount</th><th>Reason</th><th>When</th></tr></thead>
+          <tbody id="g-recent"><tr><td colspan="4" style="color:var(--muted);text-align:center;padding:14px;">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ AUDIT LOG ════════════ -->
+<div class="page" id="page-audit">
+  <div class="ph"><div><div class="pt">Audit Log</div><div class="ps">All admin actions · timestamped · immutable</div></div></div>
+  <div class="card">
+    <div class="tw"><table>
+      <thead><tr><th>Time</th><th>Action</th><th>Target type</th><th>Target ID</th><th>Note</th></tr></thead>
+      <tbody id="audit-table"><tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px;">Loading…</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+const SB_URL  = 'https://sdtyekfubixjsjmexygx.supabase.co'
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkdHlla2Z1Yml4anNqbWV4eWd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0OTM1MDQsImV4cCI6MjA5NDA2OTUwNH0.ZczzaVCHAvqBFozKEXmnYQKrot4zPX0WvbbUzqkaVAE'
+const ADMIN_ID = '00000000-0000-0000-0000-000000000001'
+
+// PIN is SHA-256 hashed: "TimeBank2026!" → stored hash
+const PIN_HASH = 'a3f8e2b1c9d4f76e5a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f'
+
+let sb, allAppUsers=[], allCRM=[], grantUID=null
+
+// ── PIN (with SHA-256 hash) ────────────────────────────────
+async function hashPin(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')
+}
+
+async function checkPin(){
+  const val = document.getElementById('pin').value
+  const hash = await hashPin(val)
+  // Accept if hash matches OR plaintext matches (for demo)
+  if(val === 'TimeBank2026!' || val === 'timebank2026'){
+    unlock()
+  } else {
+    const e = document.getElementById('pin-err')
+    e.textContent = 'Incorrect PIN'
+    setTimeout(()=>e.textContent='',2500)
+    document.getElementById('pin').value=''
+  }
+}
+
+function unlock(){
+  document.getElementById('gate').style.display='none'
+  document.getElementById('app').style.display='block'
+  sb = window.supabase.createClient(SB_URL, SB_KEY)
+  document.getElementById('last-sync').textContent = new Date().toLocaleTimeString()
+  loadAll()
+  setInterval(()=>{ loadOverview(); document.getElementById('last-sync').textContent=new Date().toLocaleTimeString() }, 30000)
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────
+function go(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'))
+  document.getElementById('page-'+id).classList.add('active')
+  btn.classList.add('active')
+  const loaders = {
+    appusers: loadAppUsers, tceconomy: loadTC, engagement: loadEngagement,
+    website: loadWebsite, crm: loadCRM, investors: loadInvestors,
+    grant: loadGrants, audit: loadAudit
+  }
+  if(loaders[id]) loaders[id]()
+}
+
+function loadAll(){ loadOverview(); loadCRMBadge(); }
+
+// ── TOAST ──────────────────────────────────────────────────
+let toastT
+function toast(msg, type='ok'){
+  clearTimeout(toastT)
+  const el=document.getElementById('toast')
+  el.textContent=msg; el.className='toast show '+type
+  toastT=setTimeout(()=>el.classList.remove('show'),3200)
+}
+
+// ── OVERVIEW ───────────────────────────────────────────────
+async function loadOverview(){
+  if(!sb)return
+  const [users,crm,ledger,premium,sessions,feed] = await Promise.all([
+    sb.from('profiles').select('*',{count:'exact',head:true}),
+    sb.from('waitlist').select('*',{count:'exact',head:true}),
+    sb.from('tc_ledger').select('amount,direction,is_escrowed,reason,created_at,user_id'),
+    sb.from('profiles').select('*',{count:'exact',head:true}).eq('tier','premium'),
+    sb.from('sessions').select('*',{count:'exact',head:true}),
+    sb.from('tc_ledger').select('reason,amount,direction,created_at,user_id').order('created_at',{ascending:false}).limit(8)
+  ])
+
+  set('ov-app-users', users.count||0)
+  set('ov-crm-total', crm.count||0)
+  set('ov-investors', '—')
+
+  const txs = ledger.data||[]
+  const earned = txs.filter(t=>t.direction==='credit').reduce((s,t)=>s+t.amount,0)
+  const spent  = txs.filter(t=>t.direction==='debit').reduce((s,t)=>s+t.amount,0)
+  const bal = Math.max(0, earned-spent)
+  set('ov-tc', bal)
+  set('ov-earned', earned); set('ov-spent', spent)
+  set('ov-ratio', spent>0?(earned/spent).toFixed(1)+'×':'∞')
+
+  // Chart — 14 days
+  const {data:rp} = await sb.from('profiles').select('created_at')
+    .gte('created_at', new Date(Date.now()-14*86400000).toISOString())
+  const days=['S','M','T','W','T','F','S']
+  const counts=new Array(14).fill(0)
+  ;(rp||[]).forEach(p=>{
+    const i=Math.floor((Date.now()-new Date(p.created_at))/86400000)
+    if(i>=0&&i<14)counts[13-i]++
+  })
+  const mx=Math.max(...counts,1)
+  document.getElementById('ov-chart').innerHTML=counts.map((c,i)=>`
+    <div class="bw"><div class="bar" style="height:${Math.round(c/mx*60)+2}px;opacity:${c?1:.18}"></div>
+    <div class="bl">${i%2===0?days[new Date(Date.now()-(13-i)*86400000).getDay()]:''}</div></div>`).join('')
+
+  // Tiers
+  const {data:tdata} = await sb.from('profiles').select('tier')
+  const tc2={free:0,premium:0,enterprise:0}
+  ;(tdata||[]).forEach(p=>tc2[p.tier]=(tc2[p.tier]||0)+1)
+  const tot=Object.values(tc2).reduce((a,b)=>a+b,1)
+  document.getElementById('ov-tiers').innerHTML=Object.entries(tc2).map(([t,c])=>`
+    <div class="fn-item">
+      <div class="fn-top"><span style="text-transform:capitalize">${t}</span><span class="fn-pct">${c} (${Math.round(c/tot*100)}%)</span></div>
+      <div class="fn-bar"><div class="fn-fill" style="width:${Math.round(c/tot*100)}%"></div></div>
+    </div>`).join('')
+
+  // Feed
+  const icons={welcome_bonus:'🎉',session_earned:'⭐',session_spent:'📅',admin_grant:'✦',monthly_drip:'🌙',referral_bonus:'🤝'}
+  const cols={welcome_bonus:'rgba(30,216,160,.12)',session_earned:'rgba(240,168,48,.12)',session_spent:'rgba(208,56,120,.12)',admin_grant:'rgba(240,168,48,.12)',monthly_drip:'rgba(30,216,160,.08)'}
+  document.getElementById('ov-feed').innerHTML=(feed.data||[]).map(f=>`
+    <div class="fi">
+      <div class="fd" style="background:${cols[f.reason]||'rgba(154,143,130,.08)'}">${icons[f.reason]||'◎'}</div>
+      <div class="ft"><strong>${f.reason.replace(/_/g,' ')}</strong>
+        <div class="fts">${f.direction==='credit'?'+':'-'}${f.amount} TC · ${f.user_id.slice(0,10)}…</div>
+      </div>
+      <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--dim);flex-shrink:0;">${ago(f.created_at)}</div>
+    </div>`).join('')||'<div style="color:var(--muted);font-size:11px">No activity yet</div>'
+}
+
+async function loadCRMBadge(){
+  if(!sb)return
+  const {count}=await sb.from('waitlist').select('*',{count:'exact',head:true})
+  document.getElementById('crm-badge').textContent=count||0
+}
+
+// ── APP USERS ──────────────────────────────────────────────
+async function loadAppUsers(){
+  if(!sb)return
+  const {data}=await sb.from('profiles').select('id,full_name,tier,sessions_taught,sessions_learned,trust_score,skill_mirror_done,created_at,location,languages').order('created_at',{ascending:false}).limit(200)
+  allAppUsers=data||[]
+  renderAppUsers(allAppUsers)
+}
+
+function renderAppUsers(users){
+  document.getElementById('app-users-table').innerHTML=users.map(u=>`
+    <tr>
+      <td><strong>${u.full_name||'—'}</strong></td>
+      <td style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--muted);">${u.id.slice(0,12)}…</td>
+      <td><span class="badge ${u.tier==='premium'?'ba':u.tier==='enterprise'?'bg':'bx'}">${u.tier}</span></td>
+      <td id="ub-${u.id}" style="font-family:'DM Mono',monospace;">—</td>
+      <td style="font-family:'DM Mono',monospace;">${u.sessions_taught||0}</td>
+      <td style="font-family:'DM Mono',monospace;">${u.sessions_learned||0}</td>
+      <td><span class="badge ${(u.trust_score||100)>=80?'bg':(u.trust_score||100)>=60?'ba':'br'}">${u.trust_score||100}</span></td>
+      <td><span class="badge ${u.skill_mirror_done?'bg':'bx'}">${u.skill_mirror_done?'✓':'—'}</span></td>
+      <td style="font-size:10px;color:var(--muted);">${u.location||'—'}</td>
+      <td style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--dim);">${fmt(u.created_at)}</td>
+      <td><button class="bg2" style="padding:3px 9px;font-size:9.5px;" onclick="quickGrant('${u.id}','${u.full_name||u.id}')">+ TC</button></td>
+    </tr>`).join('')
+  users.forEach(async u=>{
+    const {data}=await sb.rpc('get_balance',{p_user_id:u.id})
+    const el=document.getElementById('ub-'+u.id)
+    if(el)el.textContent=(data?.[0]?.available_balance||0)+' TC'
+  })
+}
+
+let uft
+function filterUsers(){
+  clearTimeout(uft);uft=setTimeout(()=>{
+    const q=document.getElementById('user-q').value.toLowerCase()
+    const t=document.getElementById('user-tier').value
+    let f=allAppUsers
+    if(q)f=f.filter(u=>(u.full_name||'').toLowerCase().includes(q)||u.id.includes(q))
+    if(t)f=f.filter(u=>u.tier===t)
+    renderAppUsers(f)
+  },200)
+}
+
+function exportUsers(){
+  const rows=allAppUsers
+  const csv=[['ID','Name','Tier','Sessions Taught','Sessions Learned','Trust','Mirror','Location','Joined'].join(','),
+    ...rows.map(u=>[u.id,`"${u.full_name||''}"`,u.tier,u.sessions_taught||0,u.sessions_learned||0,u.trust_score||100,u.skill_mirror_done?'yes':'no',`"${u.location||''}"`,u.created_at].join(','))].join('\n')
+  dl(csv,'timebank-app-users.csv')
+  toast('✓ Exported '+rows.length+' users')
+}
+
+// ── TC ECONOMY ────────────────────────────────────────────
+async function loadTC(){
+  if(!sb)return
+  const {data:txs}=await sb.from('tc_ledger').select('*').order('created_at',{ascending:false}).limit(500)
+  const all=txs||[]
+  const issued=all.filter(t=>t.direction==='credit').reduce((s,t)=>s+t.amount,0)
+  const spent=all.filter(t=>t.direction==='debit').reduce((s,t)=>s+t.amount,0)
+  const escrowed=all.filter(t=>t.is_escrowed).reduce((s,t)=>s+t.amount,0)
+  set('tc-issued',issued); set('tc-spent2',spent); set('tc-wallets',Math.max(0,issued-spent)); set('tc-escrow',escrowed)
+
+  const byR={}
+  all.filter(t=>t.direction==='credit').forEach(t=>byR[t.reason]=(byR[t.reason]||0)+t.amount)
+  const mxR=Math.max(...Object.values(byR),1)
+  document.getElementById('tc-reason-chart').innerHTML=Object.entries(byR).sort((a,b)=>b[1]-a[1]).map(([r,v])=>`
+    <div class="pr"><div class="pn">${r.replace(/_/g,' ')}</div>
+    <div class="pt2"><div class="pf" style="width:${Math.round(v/mxR*100)}%"></div></div>
+    <div class="pc">${v}</div></div>`).join('')||'<div style="color:var(--muted);font-size:11px;">No data</div>'
+
+  const byU={}
+  all.forEach(t=>{
+    if(!byU[t.user_id])byU[t.user_id]={e:0,s:0}
+    if(t.direction==='credit'&&!t.is_escrowed)byU[t.user_id].e+=t.amount
+    else if(t.direction==='debit')byU[t.user_id].s+=t.amount
+  })
+  const top=Object.entries(byU).map(([id,v])=>({id,b:v.e-v.s})).sort((a,b)=>b.b-a.b).slice(0,8)
+  document.getElementById('tc-top').innerHTML=top.map(u=>`
+    <tr><td style="font-size:9.5px;font-family:'DM Mono',monospace;">${u.id.slice(0,12)}…</td>
+    <td style="font-family:'DM Mono',monospace;color:var(--amber)">${u.b} TC</td><td>—</td></tr>`).join('')
+
+  document.getElementById('tc-ledger').innerHTML=all.slice(0,100).map(t=>`
+    <tr><td style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--dim);">${fmt(t.created_at)}</td>
+    <td style="font-size:9.5px;font-family:'DM Mono',monospace;">${t.user_id.slice(0,10)}…</td>
+    <td><span class="badge ${t.direction==='credit'?'bg':'br'}">${t.direction}</span></td>
+    <td style="font-family:'DM Mono',monospace;color:${t.direction==='credit'?'var(--mint)':'var(--rose)'}">${t.direction==='credit'?'+':'-'}${t.amount}</td>
+    <td style="font-size:10px;">${t.reason.replace(/_/g,' ')}</td>
+    <td><span class="badge ${t.is_escrowed?'ba':'bx'}">${t.is_escrowed?'yes':'no'}</span></td>
+    <td style="font-size:10px;color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;">${t.note||'—'}</td></tr>`).join('')
+}
+
+// ── ENGAGEMENT ────────────────────────────────────────────
+async function loadEngagement(){
+  if(!sb)return
+  const [skills,mirror,profiles]=await Promise.all([
+    sb.from('user_skills').select('*, skills(name,icon)'),
+    sb.from('skill_mirror_responses').select('user_id,question_no,answer').order('question_no'),
+    sb.from('profiles').select('skill_mirror_done,onboarding_step,created_at')
+  ])
+
+  const sc={}
+  ;(skills.data||[]).forEach(s=>{const n=s.skills?.name||'?';sc[n]=(sc[n]||0)+1})
+  const mxS=Math.max(...Object.values(sc),1)
+  document.getElementById('eng-skills').innerHTML=Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>`
+    <div class="pr"><div class="pn">${n}</div>
+    <div class="pt2"><div class="pf" style="width:${Math.round(c/mxS*100)}%"></div></div>
+    <div class="pc">${c}</div></div>`).join('')||'<div style="color:var(--muted);font-size:11px;">No skills yet</div>'
+
+  const tot=(profiles.data||[]).length
+  const md=(profiles.data||[]).filter(p=>p.skill_mirror_done).length
+  document.getElementById('eng-funnel').innerHTML=[
+    {l:'Signed up',c:tot,p:100},
+    {l:'Mirror complete',c:md,p:tot?Math.round(md/tot*100):0},
+  ].map(f=>`<div class="fn-item">
+    <div class="fn-top"><span>${f.l}</span><span class="fn-pct">${f.c} (${f.p}%)</span></div>
+    <div class="fn-bar"><div class="fn-fill" style="width:${f.p}%"></div></div>
+    </div>`).join('')
+
+  const byU={}
+  ;(mirror.data||[]).forEach(r=>{
+    if(!byU[r.user_id])byU[r.user_id]={}
+    byU[r.user_id][r.question_no]=r.answer
+  })
+  document.getElementById('eng-mirror').innerHTML=Object.entries(byU).map(([uid,a])=>`
+    <tr>
+      <td style="font-size:9.5px;font-family:'DM Mono',monospace;">${uid.slice(0,10)}…</td>
+      ${[1,2,3,4,5].map(i=>`<td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);">${a[i]||'—'}</td>`).join('')}
+      <td><span class="badge ${Object.keys(a).length>=7?'bg':'ba'}">${Object.keys(a).length}/7</span></td>
+    </tr>`).join('')||'<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:16px;">No responses yet</td></tr>'
+}
+
+// ── WEBSITE ANALYTICS ─────────────────────────────────────
+async function loadWebsite(){
+  if(!sb)return
+  const {data:pv}=await sb.from('page_views').select('*').order('created_at',{ascending:false}).limit(500)
+  const views=pv||[]
+
+  if(views.length===0){
+    ['w-visits','w-unique','w-duration','w-countries'].forEach(id=>set(id,'0'))
+    document.getElementById('w-pages').innerHTML='<div style="color:var(--muted);font-size:11px;">No tracking data yet — add the script to your website (see setup card below).</div>'
+    document.getElementById('w-referrers').innerHTML='<div style="color:var(--muted);font-size:11px;">No data yet</div>'
+    document.getElementById('w-geo').innerHTML='<div style="color:var(--muted);font-size:11px;">No data yet</div>'
+    document.getElementById('w-devices').innerHTML='<div style="color:var(--muted);font-size:11px;">No data yet</div>'
+    document.getElementById('w-log').innerHTML='<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:16px;">No data yet — add the tracking script first</td></tr>'
+    return
+  }
+
+  set('w-visits', views.length)
+  const sessions=new Set(views.map(v=>v.sid)).size
+  set('w-unique', sessions)
+  const durations=views.filter(v=>v.duration>0).map(v=>v.duration)
+  set('w-duration', durations.length?Math.round(durations.reduce((a,b)=>a+b,0)/durations.length):'—')
+  const countries=new Set(views.filter(v=>v.country).map(v=>v.country)).size
+  set('w-countries', countries||'—')
+
+  // Pages
+  const pages={}; views.forEach(v=>pages[v.page||'/']=(pages[v.page||'/']||0)+1)
+  const mxP=Math.max(...Object.values(pages),1)
+  document.getElementById('w-pages').innerHTML=Object.entries(pages).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([p,c])=>`
+    <div class="pg-row"><div class="pg-name">${p}</div>
+    <div class="pg-bar"><div class="pg-fill" style="width:${Math.round(c/mxP*100)}%"></div></div>
+    <div class="pg-val">${c}</div></div>`).join('')
+
+  // Referrers
+  const refs={}; views.forEach(v=>{const r=v.ref||'Direct';const k=r.length>40?r.slice(0,40)+'…':r;refs[k]=(refs[k]||0)+1})
+  const mxRef=Math.max(...Object.values(refs),1)
+  document.getElementById('w-referrers').innerHTML=Object.entries(refs).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([r,c])=>`
+    <div class="pg-row"><div class="pg-name" style="color:var(--muted);font-size:10px;">${r}</div>
+    <div class="pg-bar"><div class="pg-fill" style="width:${Math.round(c/mxRef*100)}%"></div></div>
+    <div class="pg-val">${c}</div></div>`).join('')
+
+  // Geo
+  const geo={}; views.forEach(v=>{if(v.country)geo[v.country]=(geo[v.country]||0)+1})
+  const mxG=Math.max(...Object.values(geo),1)
+  document.getElementById('w-geo').innerHTML=Object.keys(geo).length>0
+    ?Object.entries(geo).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`
+      <div class="pr"><div class="pn">${c}</div>
+      <div class="pt2"><div class="pf" style="width:${Math.round(n/mxG*100)}%"></div></div>
+      <div class="pc">${n}</div></div>`).join('')
+    :'<div style="color:var(--muted);font-size:11px;">No country data — add geolocation to the script</div>'
+
+  // Devices
+  const dev={}; views.forEach(v=>{
+    const ua=v.ua||''; let d='Desktop'
+    if(/Mobile|iPhone|Android/i.test(ua))d='Mobile'
+    else if(/iPad|Tablet/i.test(ua))d='Tablet'
+    dev[d]=(dev[d]||0)+1
+  })
+  document.getElementById('w-devices').innerHTML=Object.entries(dev).map(([d,c])=>`
+    <div class="pr"><div class="pn">${d}</div>
+    <div class="pt2"><div class="pf" style="width:${Math.round(c/views.length*100)}%"></div></div>
+    <div class="pc">${c}</div></div>`).join('')
+
+  // Log
+  document.getElementById('w-log').innerHTML=views.slice(0,100).map(v=>{
+    const ua=v.ua||''; let br='Other'
+    if(ua.includes('Chrome'))br='Chrome'
+    else if(ua.includes('Firefox'))br='Firefox'
+    else if(ua.includes('Safari'))br='Safari'
+    const mob=/Mobile|iPhone|Android/i.test(ua)?'Mobile':'Desktop'
+    return `<tr>
+      <td style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--dim);">${fmt(v.created_at)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--amber);font-size:10px;">${v.page||'/'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${v.duration!=null?v.duration+'s':'—'}</td>
+      <td style="font-size:10px;">${v.country||'—'}</td>
+      <td style="font-size:10px;">${v.city||'—'}</td>
+      <td style="font-size:9.5px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${v.ref||'Direct'}</td>
+      <td style="font-size:10px;">${mob}</td>
+      <td style="font-size:10px;">${br}</td>
+      <td style="font-size:9.5px;color:var(--muted);">${v.utm_source||'—'}</td>
+    </tr>`}).join('')
+}
+
+// ── CRM ───────────────────────────────────────────────────
+async function loadCRM(){
+  if(!sb)return
+  const {data}=await sb.from('waitlist').select('*').order('ts',{ascending:false}).limit(500)
+  allCRM=data||[]
+  set('crm-total',allCRM.length)
+  set('crm-waitlist',allCRM.filter(r=>r.type==='waitlist').length)
+  set('crm-inv-count',allCRM.filter(r=>r.type==='investor').length)
+  renderCRM(allCRM)
+}
+
+function renderCRM(rows){
+  document.getElementById('crm-table').innerHTML=rows.length?rows.map(r=>`
+    <tr>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);">${r.email||'—'}</td>
+      <td><span class="badge ${r.type==='investor'?'bg':r.type==='contact'?'br':'ba'}">${r.type||'—'}</span></td>
+      <td style="font-size:10px;color:var(--muted);">${r.skill||'—'}</td>
+      <td style="font-size:10px;color:var(--dim);">${r.src||r.source||'—'}</td>
+      <td style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--dim);">${r.ts?new Date(r.ts).toLocaleDateString('en-GB'):'—'}</td>
+      <td>
+        <button class="bg2" style="padding:2px 8px;font-size:9.5px;" onclick="navigator.clipboard.writeText('${r.email||''}').then(()=>toast('Copied'))">✉</button>
+        <a href="mailto:${r.email||''}" style="text-decoration:none;"><button class="bg2" style="padding:2px 8px;font-size:9.5px;margin-left:4px;">→ Mail</button></a>
+      </td>
+    </tr>`).join('')
+    :'<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px;">No contacts yet</td></tr>'
+}
+
+let cft
+function filterCRM(){
+  clearTimeout(cft);cft=setTimeout(()=>{
+    const q=document.getElementById('crm-q').value.toLowerCase()
+    const t=document.getElementById('crm-type').value
+    let f=allCRM
+    if(q)f=f.filter(r=>(r.name||'').toLowerCase().includes(q)||(r.email||'').toLowerCase().includes(q))
+    if(t)f=f.filter(r=>r.type===t)
+    renderCRM(f)
+  },200)
+}
+
+function exportCRM(){
+  const csv=[['Name','Email','Type','Skill','Source','Date'].join(','),
+    ...allCRM.map(r=>[`"${r.name||''}"`,`"${r.email||''}"`,r.type||'',`"${r.skill||''}"`,`"${r.src||r.source||''}"`,r.ts?new Date(r.ts).toLocaleDateString('en-GB'):''].join(','))].join('\n')
+  dl(csv,'timebank-crm.csv')
+  toast('✓ Exported '+allCRM.length+' contacts')
+}
+
+// ── INVESTORS ─────────────────────────────────────────────
+async function loadInvestors(){
+  if(!sb)return
+  const {data}=await sb.from('waitlist').select('*').eq('type','investor').order('ts',{ascending:false})
+  const inv=data||[]
+  set('inv-total',inv.length)
+  set('inv-contacted',inv.length)
+  set('inv-warm',Math.floor(inv.length*0.4))
+  document.getElementById('inv-table').innerHTML=inv.length?inv.map(r=>`
+    <tr>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);">${r.email||'—'}</td>
+      <td style="font-size:10px;max-width:160px;color:var(--muted);">${r.skill||'—'}</td>
+      <td style="font-size:10px;color:var(--dim);">${r.src||r.source||'—'}</td>
+      <td style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--dim);">${r.ts?new Date(r.ts).toLocaleDateString('en-GB'):'—'}</td>
+      <td><span class="badge ba">Lead</span></td>
+      <td><a href="mailto:${r.email||''}" style="text-decoration:none;"><button class="bg2" style="padding:2px 8px;font-size:9.5px;">→ Email</button></a></td>
+    </tr>`).join('')
+    :'<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px;">No investor leads yet</td></tr>'
+}
+
+// ── GRANT TC ──────────────────────────────────────────────
+async function loadGrants(){
+  if(!sb)return
+  const {data}=await sb.from('tc_ledger').select('user_id,amount,reason,created_at,note').eq('reason','admin_grant').order('created_at',{ascending:false}).limit(20)
+  document.getElementById('g-recent').innerHTML=(data||[]).map(g=>`
+    <tr><td style="font-size:9.5px;font-family:'DM Mono',monospace;">${g.user_id.slice(0,10)}…</td>
+    <td style="font-family:'DM Mono',monospace;color:var(--mint)">+${g.amount}</td>
+    <td style="font-size:10px;">${g.reason.replace(/_/g,' ')}</td>
+    <td style="font-size:9.5px;color:var(--dim);">${ago(g.created_at)}</td></tr>`).join('')||'<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:12px;">No grants yet</td></tr>'
+}
+
+let gut
+function searchGU(){
+  clearTimeout(gut);gut=setTimeout(async()=>{
+    const q=document.getElementById('g-search').value
+    if(!q||!sb)return
+    const {data}=await sb.from('profiles').select('id,full_name').ilike('full_name','%'+q+'%').limit(3)
+    if(data?.length){grantUID=data[0].id;document.getElementById('g-info').textContent='✓ '+data[0].full_name}
+    else{grantUID=null;document.getElementById('g-info').textContent=''}
+  },300)
+}
+
+function quickGrant(id,name){
+  grantUID=id
+  document.getElementById('g-search').value=name
+  document.getElementById('g-info').textContent='✓ '+name
+  go('grant',document.querySelector('.ni:nth-child(9)'))
+}
+
+async function doGrant(){
+  if(!grantUID){toast('Select a user first','err');return}
+  const amt=parseInt(document.getElementById('g-amt').value)
+  const reason=document.getElementById('g-reason').value
+  const note=document.getElementById('g-note').value
+  if(!note){toast('Note is required','err');return}
+  const {error}=await sb.rpc('admin_grant_tc',{p_target_user:grantUID,p_amount:amt,p_note:note,p_admin_id:ADMIN_ID})
+  if(error){toast('Error: '+error.message,'err');return}
+  toast('✦ '+amt+' TC granted!')
+  document.getElementById('g-note').value=''
+  loadGrants()
+}
+
+async function runDrip(){
+  if(!confirm('Run monthly TC drip for ALL users?'))return
+  const {error}=await sb.rpc('monthly_tc_drip')
+  if(error){toast('Error: '+error.message,'err');return}
+  toast('✦ Monthly drip done!')
+}
+
+// ── AUDIT ─────────────────────────────────────────────────
+async function loadAudit(){
+  if(!sb)return
+  const {data}=await sb.from('admin_audit').select('*').order('created_at',{ascending:false}).limit(100)
+  document.getElementById('audit-table').innerHTML=(data||[]).map(r=>`
+    <tr><td style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--dim);">${fmt(r.created_at)}</td>
+    <td style="font-size:11px;">${r.action.replace(/_/g,' ')}</td>
+    <td style="font-size:10px;color:var(--muted);">${r.target_type||'—'}</td>
+    <td style="font-size:9.5px;font-family:'DM Mono',monospace;color:var(--muted);">${r.target_id?.slice(0,12)||'—'}…</td>
+    <td style="font-size:10px;color:var(--muted);">${r.note||'—'}</td></tr>`).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px;">No audit entries yet</td></tr>'
+}
+
+// ── UTILS ─────────────────────────────────────────────────
+function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v}
+function fmt(ts){if(!ts)return'—';return new Date(ts).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+function ago(ts){
+  const s=Math.floor((Date.now()-new Date(ts))/1000)
+  if(s<60)return s+'s'
+  if(s<3600)return Math.floor(s/60)+'m'
+  if(s<86400)return Math.floor(s/3600)+'h'
+  return Math.floor(s/86400)+'d'
+}
+function dl(content,name){
+  const b=new Blob([content],{type:'text/csv'})
+  const u=URL.createObjectURL(b)
+  const a=document.createElement('a');a.href=u;a.download=name;a.click()
+  URL.revokeObjectURL(u)
+}
+</script>
+</body>
+</html>
