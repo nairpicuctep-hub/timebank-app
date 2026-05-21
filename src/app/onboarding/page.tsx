@@ -90,7 +90,7 @@ export default function OnboardingPage() {
     ]
 
     // Get skill IDs from slugs
-    const allSlugs = [...new Set([...teachSkills, ...learnSkills])]
+    const allSlugs = Array.from(new Set([...teachSkills, ...learnSkills]))
     const { data: skillData } = await supabase
       .from('skills').select('id, slug').in('slug', allSlugs)
 
