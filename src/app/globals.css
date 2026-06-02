@@ -1,94 +1,216 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Instrument+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400&display=swap');
+/* =============================================================================
+   TimeBank Academy — globals.css
+   Light "warm cream + moonlight" theme · Bricolage / Inter / DM Mono
+   Tailwind v3
+   ============================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Design tokens
+   --------------------------------------------------------------------------- */
 :root {
-  --amber:   #F0A830;
-  --coral:   #E85030;
-  --rose:    #D03878;
-  --mint:    #1ED8A0;
-  --sand:    #F5EDD8;
-  --ink:     #0c0906;
-  --grad:    linear-gradient(135deg, #F0A830, #E85030, #D03878);
+  /* Brand gradient — soft amber → coral → rose */
+  --amber:  #F0A830;
+  --coral:  #E85030;
+  --rose:   #D03878;
+  --grad:   linear-gradient(135deg, #F0A830, #E85030, #D03878);
+  --grad-soft: linear-gradient(135deg, #f7b94f, #ef6a45, #d8508a);
+
+  /* Warm cream surfaces */
+  --cream-1: #fef6f0;
+  --cream-2: #fff5ed;
+  --cream-3: #fff0f0;
+  --bg:      #fdf4ec;   /* page base */
+  --card:    rgba(255, 255, 255, 0.72);
+  --card-2:  rgba(255, 255, 255, 0.55);
+  --line:    rgba(120, 70, 40, 0.10);
+  --line-2:  rgba(120, 70, 40, 0.06);
+
+  /* Ink + text */
+  --ink:     #2b1c14;   /* warm near-black, never pure */
+  --text:    #3a2a20;
+  --muted:   #8a7565;
+  --faint:   #b7a596;
+
+  /* Semantic */
+  --mint:      #15a06e;
+  --mint-bg:   #ecfdf5;
+  --offered-bg:#fff7ed; --offered-tx:#c2410c; --offered-bd:#fed7aa;
+  --request-bg:#f0f9ff; --request-tx:#0369a1; --request-bd:#bae6fd;
+  --tc-bg:     #fffbeb; --tc-tx:#92400e; --tc-bd:#fde68a;
+
+  /* Fonts */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-sans:    'Inter', system-ui, sans-serif;
+  --font-mono:    'DM Mono', ui-monospace, monospace;
+
+  /* Radii + shadow */
+  --r-card: 22px;
+  --r-btn:  13px;
+  --r-pill: 100px;
+  --shadow-card: 0 10px 30px -16px rgba(120, 60, 20, 0.25);
+  --shadow-grad: 0 18px 40px -18px rgba(234, 88, 12, 0.55);
+  --shadow-btn:  0 6px 16px -4px rgba(234, 88, 12, 0.45);
 }
 
 * { box-sizing: border-box; }
 
 html, body {
-  background: #0c0906;
-  color: #F5EDD8;
-  font-family: 'Instrument Sans', sans-serif;
-  -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background:
+    radial-gradient(1100px 600px at 85% -8%, #ffe9d6 0%, transparent 55%),
+    radial-gradient(900px 520px at -10% 108%, #ffe1e6 0%, transparent 52%),
+    linear-gradient(135deg, var(--cream-1), var(--cream-2) 50%, var(--cream-3));
+  background-attachment: fixed;
 }
 
-/* Grain overlay on body */
+/* Faint film grain — tactile warmth, dialed low for light theme */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events: none;
   z-index: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+/* keep app content above the grain */
+#__next, main, body > div { position: relative; z-index: 1; }
 
-/* Gradient text utility */
+/* ---------------------------------------------------------------------------
+   Typography helpers
+   --------------------------------------------------------------------------- */
+.font-display { font-family: var(--font-display); }
+.font-mono    { font-family: var(--font-mono); }
+
 .grad-text {
-  background: linear-gradient(135deg, #F0A830, #E85030, #D03878);
+  background: var(--grad);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
-/* Gradient border utility */
-.grad-border {
-  border: 1px solid transparent;
-  background: linear-gradient(#1c1917, #1c1917) padding-box,
-              linear-gradient(135deg, #F0A830, #E85030, #D03878) border-box;
+/* ---------------------------------------------------------------------------
+   Components (used as @apply-free utility classes)
+   --------------------------------------------------------------------------- */
+.glass {
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
 }
 
-/* TC Orb spin animation */
-@keyframes orbSpin {
-  to { transform: rotate(360deg); }
+.grad-card {
+  position: relative;
+  border-radius: var(--r-card);
+  background: var(--grad);
+  color: #fff;
+  box-shadow: var(--shadow-grad);
+  overflow: hidden;
 }
-@keyframes orbSpinRev {
-  to { transform: rotate(-360deg); }
+/* decorative blobs for gradient cards */
+.grad-card .blob { position: absolute; border-radius: 50%; filter: blur(34px); pointer-events: none; }
+.grad-card .blob-1 { width: 170px; height: 170px; top: -65px; right: -45px; background: rgba(255,255,255,0.18); }
+.grad-card .blob-2 { width: 170px; height: 170px; bottom: -75px; left: -35px; background: rgba(208,56,120,0.4); }
+
+.btn-grad {
+  background: var(--grad);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-btn);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  box-shadow: var(--shadow-btn);
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
-.orb-outer { animation: orbSpin 8s linear infinite; }
-.orb-inner { animation: orbSpinRev 8s linear infinite; }
+.btn-grad:active { transform: scale(0.97); }
+.btn-grad:disabled { opacity: 0.4; }
 
-/* Fade up animation */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--line);
+  color: var(--text);
+  border-radius: var(--r-btn);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  transition: background 0.15s ease;
 }
-.fade-up { animation: fadeUp 0.5s ease forwards; }
-.fade-up-1 { animation: fadeUp 0.5s 0.1s ease both; }
-.fade-up-2 { animation: fadeUp 0.5s 0.2s ease both; }
-.fade-up-3 { animation: fadeUp 0.5s 0.3s ease both; }
-.fade-up-4 { animation: fadeUp 0.5s 0.4s ease both; }
+.btn-ghost:active { background: rgba(120,70,40,0.04); }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(245,237,216,0.12); border-radius: 2px; }
+/* pills + badges */
+.pill {
+  border-radius: var(--r-pill);
+  font-weight: 500;
+  font-size: 13px;
+  padding: 8px 15px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pill-active { background: var(--grad); color: #fff; border-color: transparent; }
 
-/* Input base */
+.badge { border-radius: var(--r-pill); padding: 4px 11px; font-size: 11px; font-weight: 600; }
+.badge-offered  { background: var(--offered-bg); color: var(--offered-tx); border: 1px solid var(--offered-bd); }
+.badge-request  { background: var(--request-bg); color: var(--request-tx); border: 1px solid var(--request-bd); }
+.badge-tc       { background: var(--tc-bg); color: var(--tc-tx); border: 1px solid var(--tc-bd); font-family: var(--font-mono); }
+
+/* ---------------------------------------------------------------------------
+   Motion — one orchestrated page-load stagger
+   --------------------------------------------------------------------------- */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.rise   { animation: rise 0.6s cubic-bezier(0.2,0.7,0.2,1) both; }
+.rise-1 { animation: rise 0.6s 0.05s cubic-bezier(0.2,0.7,0.2,1) both; }
+.rise-2 { animation: rise 0.6s 0.11s cubic-bezier(0.2,0.7,0.2,1) both; }
+.rise-3 { animation: rise 0.6s 0.17s cubic-bezier(0.2,0.7,0.2,1) both; }
+.rise-4 { animation: rise 0.6s 0.23s cubic-bezier(0.2,0.7,0.2,1) both; }
+.rise-5 { animation: rise 0.6s 0.29s cubic-bezier(0.2,0.7,0.2,1) both; }
+
+/* signature TC count-up pop (used when a credit lands) */
+@keyframes tcPop { 0% { transform: scale(1); } 35% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.tc-pop { animation: tcPop 0.5s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   Form controls — light theme
+   --------------------------------------------------------------------------- */
 input, textarea, select {
-  background: #242018;
-  border: 1px solid rgba(245,237,216,0.08);
+  width: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 12px 16px;
-  color: #F5EDD8;
-  font-family: 'Instrument Sans', sans-serif;
+  padding: 12px 15px;
+  color: var(--text);
+  font-family: var(--font-sans);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s;
-  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 input:focus, textarea:focus, select:focus {
-  border-color: #F0A830;
+  border-color: var(--coral);
+  box-shadow: 0 0 0 3px rgba(232, 80, 48, 0.12);
 }
-input::placeholder { color: #9a8f82; }
+input::placeholder, textarea::placeholder { color: var(--faint); }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(120,70,40,0.15); border-radius: 3px; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
