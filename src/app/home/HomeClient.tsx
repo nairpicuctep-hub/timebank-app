@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import BottomNav from '@/components/layout/BottomNav'
+import MastersStrip from '@/components/MastersStrip'
 
 /* -------------------------------------------------------------------------
    HomeClient — light cream + Bricolage. Two states baked in:
-     • populated: TC hero, XP strip, next session, browse pills, teacher feed
+     • populated: TC hero, XP strip, Masters strip, next session, browse, feed
      • cold-start: warm "you're early" guidance when no session + no teachers
    ------------------------------------------------------------------------- */
 
@@ -145,49 +146,50 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
           </div>
         </div>
 
+        {/* VIP MASTERS SHOWCASE — renders only if VIPs exist */}
+        <MastersStrip learnSkills={profile?.learn_skills || []} />
+
         {/* COLD START vs POPULATED */}
         {isColdStart ? (
-          <>
-            <div className="glass rise-2 p-5 text-center">
-              <div className="text-3xl mb-2">🌱</div>
-              <h3 className="font-display font-semibold text-lg text-ink mb-1">You&apos;re early — that&apos;s a good thing.</h3>
-              <p className="text-sm text-muted mb-4">
-                You&apos;ve got <b className="text-ink">{avail} TC</b> ready to spend. Here&apos;s how to get going:
-              </p>
-              <div className="flex flex-col gap-2 text-left">
-                <Link href="/availability" className="glass p-3.5 flex items-center gap-3" style={{ borderRadius: 14 }}>
-                  <span className="text-xl">📅</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-ink">Set your availability</div>
-                    <div className="text-xs text-muted">So learners can book you — and you earn TC</div>
-                  </div>
-                  <span className="text-muted">→</span>
-                </Link>
-                <Link href="/session" className="glass p-3.5 flex items-center gap-3" style={{ borderRadius: 14 }}>
-                  <span className="text-xl">🔍</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-ink">Explore skills</div>
-                    <div className="text-xs text-muted">See what you could learn right now</div>
-                  </div>
-                  <span className="text-muted">→</span>
-                </Link>
-                <Link href="/onboarding" className="glass p-3.5 flex items-center gap-3" style={{ borderRadius: 14 }}>
-                  <span className="text-xl">✦</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-ink">Add more skills</div>
-                    <div className="text-xs text-muted">The more you teach, the faster you earn</div>
-                  </div>
-                  <span className="text-muted">→</span>
-                </Link>
-              </div>
+          <div className="glass rise-2 p-5 text-center">
+            <div className="text-3xl mb-2">🌱</div>
+            <h3 className="font-display font-semibold text-lg text-ink mb-1">You&apos;re early — that&apos;s a good thing.</h3>
+            <p className="text-sm text-muted mb-4">
+              You&apos;ve got <b className="text-ink">{avail} TC</b> ready to spend. Here&apos;s how to get going:
+            </p>
+            <div className="flex flex-col gap-2 text-left">
+              <Link href="/availability" className="glass p-3.5 flex items-center gap-3" style={{ borderRadius: 14 }}>
+                <span className="text-xl">📅</span>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-ink">Set your availability</div>
+                  <div className="text-xs text-muted">So learners can book you — and you earn TC</div>
+                </div>
+                <span className="text-muted">→</span>
+              </Link>
+              <Link href="/session" className="glass p-3.5 flex items-center gap-3" style={{ borderRadius: 14 }}>
+                <span className="text-xl">🔍</span>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-ink">Explore skills</div>
+                  <div className="text-xs text-muted">See what you could learn right now</div>
+                </div>
+                <span className="text-muted">→</span>
+              </Link>
+              <Link href="/onboarding" className="glass p-3.5 flex items-center gap-3" style={{ borderRadius: 14 }}>
+                <span className="text-xl">✦</span>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-ink">Add more skills</div>
+                  <div className="text-xs text-muted">The more you teach, the faster you earn</div>
+                </div>
+                <span className="text-muted">→</span>
+              </Link>
             </div>
-          </>
+          </div>
         ) : (
           <>
             {/* NEXT SESSION */}
             {nextSession && (
               <Link href={`/session/${nextSession.id}`}>
-                <div className="rise-2 p-5 relative" style={{ borderRadius: 'var(--r-card)', overflow: 'hidden',
+                <div className="rise-3 p-5 relative" style={{ borderRadius: 'var(--r-card)', overflow: 'hidden',
                   background: 'linear-gradient(135deg,#F0A830,#D03878 65%,#f472b6)', color: '#fff',
                   boxShadow: '0 18px 40px -20px rgba(208,56,120,0.55)' }}>
                   <span className="inline-block px-3 py-1 rounded-pill text-[11px] font-semibold relative"
@@ -219,7 +221,7 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
             )}
 
             {/* BROWSE PILLS */}
-            <div className="rise-3">
+            <div className="rise-4">
               <h3 className="font-display font-semibold text-[17px] text-ink mb-2.5">Browse skills</h3>
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {CATS.map(c => (
@@ -232,7 +234,7 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
             </div>
 
             {/* TEACHER FEED */}
-            <div className="rise-4 flex flex-col gap-3">
+            <div className="rise-5 flex flex-col gap-3">
               {filteredTeachers.length === 0 ? (
                 <div className="glass p-6 text-center">
                   <p className="text-sm text-muted">No teachers in {cat} yet. Try another category or check back soon.</p>
@@ -249,7 +251,10 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
                             : t.profile.full_name?.[0]?.toUpperCase() || '?'}
                         </div>
                         <div className="text-white">
-                          <div className="text-sm font-semibold leading-tight">{t.profile.full_name}</div>
+                          <div className="text-sm font-semibold leading-tight flex items-center gap-1.5">
+                            {t.profile.full_name}
+                            {t.profile.is_vip && <span title="Verified Master" style={{ fontSize: 11 }}>✦</span>}
+                          </div>
                           <div className="text-[11px]" style={{ opacity: 0.85 }}>
                             ★ {Number(t.profile.rating_as_teacher || 0).toFixed(1)} · {t.profile.sessions_taught || 0} sessions
                           </div>
