@@ -4,347 +4,208 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-interface Message { id: string; user_id: string; content: string; type: string; created_at: string }
-interface PlanBlock { title: string; duration: number; description: string; completed: boolean; notes: string }
+/* -------------------------------------------------------------------------
+   Session room (/session/[id]) — light/Bricolage.
+   • Jitsi embed (room from sessions.daily_room_name)
+   • Realtime chat via session_messages + Supabase Realtime
+   • AI lesson-plan panel: STUB for now (reads course_plans.plan if present;
+     "Generate" is a fast-follow once Gemini is wired server-side)
+   • End session → complete_session(p_session_id, p_actual_end) → /review
+   ------------------------------------------------------------------------- */
 
 export default function SessionRoomPage() {
   const { id: sessionId } = useParams()
   const router = useRouter()
   const [session, setSession] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMsg, setNewMsg] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [panel, setPanel] = useState<'chat'|'ai'|'docs'>('chat')
-  const [plan, setPlan] = useState<PlanBlock[]>([])
-  const [generating, setGenerating] = useState(false)
-  const [aiInput, setAiInput] = useState({ skill: '', level: 'beginner', duration: 60 })
-  const [elapsed, setElapsed] = useState(0)
   const [isTeacher, setIsTeacher] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [panel, setPanel] = useState<'chat' | 'ai' | 'info'>('chat')
+  const [messages, setMessages] = useState<any[]>([])
+  const [msg, setMsg] = useState('')
+  const [plan, setPlan] = useState<any[]>([])
+  const [elapsed, setElapsed] = useState(0)
+  const [ending, setEnding] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const supabase = createClient()
+    let channel: any
+
     async function load() {
-      const { data: { session: authSession } } = await supabase.auth.getSession()
-      if (!authSession) { router.push('/auth'); return }
-      setCurrentUser(authSession.user)
+      const { data: { session: auth } } = await supabase.auth.getSession()
+      if (!auth) { router.push('/auth'); return }
+      setCurrentUser(auth.user)
 
-      const { data: sess } = await supabase.from('sessions')
-        .select('*, skills(name, icon), teacher:teacher_id(full_name), learner:learner_id(full_name)')
+      const { data: s } = await supabase.from('sessions')
+        .select('*, skill:skill_id(name, icon), teacher:teacher_id(full_name), learner:learner_id(full_name)')
         .eq('id', sessionId).single()
+      if (!s) { setLoading(false); return }
+      setSession(s)
+      setIsTeacher(s.teacher_id === auth.user.id)
 
-      if (!sess) { router.push('/home'); return }
-      setSession(sess)
-      setIsTeacher(sess.teacher_id === authSession.user.id)
-      setAiInput(prev => ({ ...prev, skill: sess.skills?.name || '' }))
-
-      const { data: msgs } = await supabase.from('session_messages')
-        .select('*').eq('session_id', sessionId).order('created_at')
-      setMessages(msgs || [])
-
-      const { data: existingPlan } = await supabase.from('course_plans')
-        .select('*').eq('session_id', sessionId).single()
-      if (existingPlan?.plan) setPlan(existingPlan.plan)
-
-      if (sess.status === 'pending') {
-        await supabase.from('sessions').update({
-          status: 'active',
-          actual_start: new Date().toISOString()
-        }).eq('id', sessionId)
-      }
-
+      const [msgRes, planRes] = await Promise.all([
+        supabase.from('session_messages').select('*').eq('session_id', sessionId).order('created_at'),
+        supabase.from('course_plans').select('plan').eq('session_id', sessionId).single(),
+      ])
+      setMessages(msgRes.data || [])
+      setPlan(Array.isArray(planRes.data?.plan) ? planRes.data.plan : [])
       setLoading(false)
 
-      supabase.channel('session-' + sessionId)
-        .on('postgres_changes', {
-          event: 'INSERT', schema: 'public',
-          table: 'session_messages',
-          filter: `session_id=eq.${sessionId}`
-        }, (payload) => {
-          setMessages(prev => [...prev, payload.new as Message])
-        }).subscribe()
+      // realtime chat
+      channel = supabase.channel(`session-${sessionId}`)
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'session_messages', filter: `session_id=eq.${sessionId}` },
+          (payload) => setMessages(prev => [...prev, payload.new]))
+        .subscribe()
     }
     load()
+    return () => { if (channel) createClient().removeChannel(channel) }
   }, [sessionId, router])
 
   useEffect(() => {
-    const timer = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => clearInterval(timer)
+    const t = setInterval(() => setElapsed(e => e + 1), 1000)
+    return () => clearInterval(t)
   }, [])
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  const formatTime = (s: number) =>
-    `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
-
-  async function sendMessage() {
-    if (!newMsg.trim()) return
+  async function send() {
+    if (!msg.trim()) return
     const supabase = createClient()
-    await supabase.from('session_messages').insert({
-      session_id: sessionId, user_id: currentUser.id,
-      content: newMsg, type: 'text'
-    })
-    setNewMsg('')
-  }
-
-  async function generatePlan() {
-    setGenerating(true)
-    try {
-      const prompt = `You are an expert educator creating a session plan for a peer-to-peer skill exchange.
-Skill: ${aiInput.skill}
-Learner level: ${aiInput.level}
-Duration: ${aiInput.duration} minutes
-
-Respond ONLY with a JSON array (no markdown):
-[{"title":"string","duration":number,"description":"string","completed":false,"notes":""}]
-
-Make 4-7 blocks totaling exactly ${aiInput.duration} minutes.`
-
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.NEXT_PUBLIC_GEMINI_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1000 }
-        })
-      })
-      const data = await res.json()
-      let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
-      text = text.replace(/```json|```/g, '').trim()
-      const parsed = JSON.parse(text)
-      setPlan(parsed)
-
-      const supabase = createClient()
-      await supabase.from('course_plans').upsert({
-        session_id: sessionId, teacher_id: currentUser.id,
-        skill: aiInput.skill, learner_level: aiInput.level,
-        duration_min: aiInput.duration, plan: parsed
-      }, { onConflict: 'session_id' })
-    } catch (err) {
-      alert('Could not generate plan — try again')
-    }
-    setGenerating(false)
-  }
-
-  async function toggleBlock(index: number) {
-    const updated = plan.map((b, i) => i === index ? { ...b, completed: !b.completed } : b)
-    setPlan(updated)
-    const supabase = createClient()
-    await supabase.from('course_plans').update({ plan: updated }).eq('session_id', sessionId)
-  }
-
-  async function updateNote(index: number, note: string) {
-    setPlan(plan.map((b, i) => i === index ? { ...b, notes: note } : b))
-  }
-
-  async function saveNotes() {
-    const supabase = createClient()
-    await supabase.from('course_plans').update({ plan }).eq('session_id', sessionId)
+    const body = msg.trim()
+    setMsg('')
+    await supabase.from('session_messages').insert({ session_id: sessionId, user_id: currentUser.id, body })
   }
 
   async function endSession() {
-    if (!confirm('End this session?')) return
+    if (!confirm('End this session? You’ll both confirm and rate next.')) return
+    setEnding(true)
     const supabase = createClient()
-    await supabase.rpc('complete_session', {
-      p_session_id: sessionId,
-      p_actual_end: new Date().toISOString()
-    })
+    await supabase.rpc('complete_session', { p_session_id: sessionId, p_actual_end: new Date().toISOString() })
     router.push(`/session/${sessionId}/review`)
   }
 
-  // Generate Jitsi room name from session ID
-  const jitsiRoom = session?.daily_room_name
-    ? `timebank-${session.daily_room_name}`
-    : `timebank-${String(sessionId).slice(0, 12)}`
-
-  const jitsiUrl = `https://meet.jit.si/${jitsiRoom}#userInfo.displayName="${encodeURIComponent(currentUser?.email || 'User')}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false`
+  const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0c0906' }}>
-      <div className="text-center">
-        <p className="text-sm font-mono" style={{ color: '#9a8f82' }}>Joining session…</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-sm font-mono text-muted">Joining session…</p>
+    </div>
+  )
+  if (!session) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-sm text-muted">Session not found</p>
     </div>
   )
 
-  return (
-    <div className="flex flex-col h-screen" style={{ background: '#0c0906', color: '#F5EDD8' }}>
+  const room = session.daily_room_name ? `timebank-${session.daily_room_name}` : `timebank-${String(sessionId).slice(0, 12)}`
+  const jitsiUrl = `https://meet.jit.si/${room}#userInfo.displayName="${encodeURIComponent(currentUser?.email || 'User')}"&config.prejoinPageEnabled=false&interfaceConfig.SHOW_JITSI_WATERMARK=false`
 
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-        style={{ background: '#141210', borderBottom: '1px solid rgba(245,237,216,0.06)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full" style={{ background: '#1ED8A0', boxShadow: '0 0 6px #1ED8A0' }} />
-          <span className="text-sm font-medium">{session?.skills?.icon} {session?.skills?.name}</span>
-          <span className="text-xs font-mono" style={{ color: '#9a8f82' }}>
-            {isTeacher ? `Teaching ${session?.learner?.full_name}` : `Learning from ${session?.teacher?.full_name}`}
-          </span>
+  return (
+    <div className="flex flex-col" style={{ height: '100dvh', background: 'var(--cream-1)' }}>
+
+      {/* top bar */}
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 glass" style={{ borderRadius: 0 }}>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--mint)', boxShadow: '0 0 6px var(--mint)' }} />
+          <span className="text-sm font-semibold text-ink truncate">{session.skill?.icon} {session.skill?.name || 'Session'}</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-sm font-mono px-3 py-1 rounded-full"
-            style={{ background: 'rgba(30,216,160,0.1)', color: '#1ED8A0', border: '1px solid rgba(30,216,160,0.2)' }}>
-            ⏱ {formatTime(elapsed)}
-          </div>
-          <a href={`https://meet.jit.si/${jitsiRoom}`} target="_blank" rel="noopener noreferrer">
-            <button className="text-xs px-3 py-1.5 rounded-lg"
-              style={{ background: 'rgba(30,216,160,0.1)', color: '#1ED8A0', border: '1px solid rgba(30,216,160,0.2)' }}>
-              ↗ Open full screen
-            </button>
-          </a>
-          <button onClick={endSession}
-            className="text-xs px-3 py-1.5 rounded-lg"
-            style={{ background: 'rgba(232,80,48,0.15)', color: '#E85030', border: '1px solid rgba(232,80,48,0.3)' }}>
-            End session
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs font-mono px-2.5 py-1 rounded-pill" style={{ background: 'var(--mint-bg)', color: 'var(--mint)' }}>⏱ {fmtTime(elapsed)}</span>
+          <button onClick={endSession} disabled={ending}
+            className="text-xs font-semibold px-3 py-1.5 rounded-btn"
+            style={{ background: 'var(--request-bg)', color: 'var(--rose)', border: '1px solid #fecdd3' }}>
+            {ending ? '…' : 'End'}
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* body: video + sidebar (stacks on mobile) */}
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
 
-        {/* Jitsi video */}
-        <div className="flex-1 relative" style={{ background: '#0a0806' }}>
-          <iframe
-            src={jitsiUrl}
-            allow="camera; microphone; fullscreen; speaker; display-capture"
-            className="w-full h-full border-0"
-            style={{ minHeight: '400px' }}
-          />
+        {/* video */}
+        <div className="flex-1 relative" style={{ background: '#0a0806', minHeight: 220 }}>
+          <iframe src={jitsiUrl} allow="camera; microphone; fullscreen; display-capture" className="w-full h-full border-0" />
         </div>
 
-        {/* Sidebar */}
-        <div className="w-80 flex flex-col flex-shrink-0"
-          style={{ background: '#141210', borderLeft: '1px solid rgba(245,237,216,0.06)' }}>
-
-          <div className="flex" style={{ borderBottom: '1px solid rgba(245,237,216,0.06)' }}>
-            {([['chat','💬','Chat'],['ai','✦','AI Plan'],['docs','📎','Docs']] as const).map(([p, icon, label]) => (
+        {/* sidebar */}
+        <div className="flex flex-col flex-shrink-0 glass md:w-80" style={{ borderRadius: 0, borderLeft: '1px solid var(--line-2)' }}>
+          <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid var(--line-2)' }}>
+            {([['chat', '💬', 'Chat'], ['ai', '✦', 'AI Plan'], ['info', 'ℹ️', 'Info']] as const).map(([p, icon, label]) => (
               <button key={p} onClick={() => setPanel(p as any)}
-                className="flex-1 py-3 text-xs font-mono flex items-center justify-center gap-1.5 transition-all"
-                style={{
-                  color: panel === p ? '#F0A830' : '#9a8f82',
-                  borderBottom: panel === p ? '2px solid #F0A830' : '2px solid transparent'
-                }}>
+                className="flex-1 py-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
+                style={{ color: panel === p ? 'var(--coral)' : 'var(--muted)', borderBottom: panel === p ? '2px solid var(--coral)' : '2px solid transparent' }}>
                 {icon} {label}
               </button>
             ))}
           </div>
 
+          {/* chat */}
           {panel === 'chat' && (
             <div className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {messages.length === 0 && (
-                  <p className="text-xs text-center py-4" style={{ color: '#6a5f52' }}>Session started — say hello! 👋</p>
-                )}
-                {messages.map(m => (
-                  <div key={m.id} className={`flex ${m.user_id === currentUser?.id ? 'justify-end' : 'justify-start'}`}>
-                    <div className="max-w-[80%] px-3 py-2 rounded-xl text-xs leading-relaxed"
-                      style={{
-                        background: m.user_id === currentUser?.id ? 'linear-gradient(135deg, #F0A830, #E85030)' : '#1c1917',
-                        color: m.user_id === currentUser?.id ? '#fff' : '#F5EDD8',
-                        border: m.user_id === currentUser?.id ? 'none' : '1px solid rgba(245,237,216,0.06)'
-                      }}>
-                      {m.content}
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 no-scrollbar">
+                {messages.length === 0 && <p className="text-xs text-center py-4 text-faint">Session started — say hello 👋</p>}
+                {messages.map(m => {
+                  const mine = m.user_id === currentUser?.id
+                  return (
+                    <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                      <div className="px-3 py-2 rounded-2xl text-sm max-w-[80%]"
+                        style={mine
+                          ? { background: 'var(--grad)', color: '#fff' }
+                          : { background: 'var(--cream-2)', color: 'var(--text)', border: '1px solid var(--line)' }}>
+                        {m.body}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
                 <div ref={chatEndRef} />
               </div>
-              <div className="p-3 flex gap-2" style={{ borderTop: '1px solid rgba(245,237,216,0.06)' }}>
-                <input value={newMsg} onChange={e => setNewMsg(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                  placeholder="Type a message…"
-                  style={{ flex: 1, padding: '8px 12px', fontSize: '12px' }} />
-                <button onClick={sendMessage}
-                  className="px-3 rounded-xl text-white text-xs"
-                  style={{ background: 'linear-gradient(135deg, #F0A830, #D03878)', flexShrink: 0 }}>→</button>
+              <div className="p-3 flex gap-2 flex-shrink-0" style={{ borderTop: '1px solid var(--line-2)' }}>
+                <input value={msg} onChange={e => setMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
+                  placeholder="Message…" style={{ fontSize: 13 }} />
+                <button onClick={send} className="btn-grad px-4 text-sm flex-shrink-0">→</button>
               </div>
             </div>
           )}
 
+          {/* AI plan — stub */}
           {panel === 'ai' && (
-            <div className="flex-1 overflow-y-auto p-3">
-              {plan.length === 0 ? (
-                <div>
-                  <p className="text-xs text-muted mb-4 leading-relaxed">Generate a structured lesson plan powered by Gemini AI — free.</p>
-                  <div className="space-y-3 mb-4">
-                    <div>
-                      <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-1">Skill</label>
-                      <input value={aiInput.skill} onChange={e => setAiInput({...aiInput, skill: e.target.value})}
-                        placeholder="e.g. Python basics" style={{ fontSize: '12px', padding: '8px 12px' }} />
+            <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
+              {plan.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {plan.map((b: any, i: number) => (
+                    <div key={i} className="glass p-3">
+                      <div className="text-sm font-semibold text-ink">{b.title || `Part ${i + 1}`}</div>
+                      {b.detail && <div className="text-xs text-muted mt-1">{b.detail}</div>}
                     </div>
-                    <div>
-                      <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-1">Learner level</label>
-                      <select value={aiInput.level} onChange={e => setAiInput({...aiInput, level: e.target.value})}
-                        style={{ fontSize: '12px', padding: '8px 12px' }}>
-                        <option value="complete beginner">Complete beginner</option>
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-1">Duration</label>
-                      <select value={aiInput.duration} onChange={e => setAiInput({...aiInput, duration: parseInt(e.target.value)})}
-                        style={{ fontSize: '12px', padding: '8px 12px' }}>
-                        {[30,45,60,90,120].map(d => <option key={d} value={d}>{d} min</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <button onClick={generatePlan} disabled={generating || !aiInput.skill}
-                    className="w-full py-3 rounded-xl text-white text-xs font-medium disabled:opacity-40"
-                    style={{ background: 'linear-gradient(135deg, #F0A830, #D03878)' }}>
-                    {generating ? '✦ Generating…' : '✦ Generate lesson plan'}
-                  </button>
+                  ))}
                 </div>
               ) : (
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-mono text-muted">{plan.filter(b=>b.completed).length}/{plan.length} done</span>
-                    <button onClick={() => setPlan([])} className="text-xs" style={{ color: '#9a8f82' }}>↺ Regenerate</button>
-                  </div>
-                  <div className="h-1 rounded-full mb-4" style={{ background: 'rgba(245,237,216,0.06)' }}>
-                    <div className="h-full rounded-full transition-all"
-                      style={{ width: `${(plan.filter(b=>b.completed).length/plan.length)*100}%`, background: 'linear-gradient(135deg, #F0A830, #D03878)' }} />
-                  </div>
-                  <div className="space-y-2">
-                    {plan.map((block, i) => (
-                      <div key={i} className="rounded-xl p-3"
-                        style={{ background: block.completed ? 'rgba(30,216,160,0.06)' : '#1c1917', border: `1px solid ${block.completed ? 'rgba(30,216,160,0.2)' : 'rgba(245,237,216,0.06)'}` }}>
-                        <div className="flex items-start gap-2 mb-1">
-                          <button onClick={() => isTeacher && toggleBlock(i)}
-                            className="w-4 h-4 rounded flex-shrink-0 mt-0.5 flex items-center justify-center text-xs"
-                            style={{ background: block.completed ? '#1ED8A0' : 'transparent', border: `1px solid ${block.completed ? '#1ED8A0' : 'rgba(245,237,216,0.2)'}`, cursor: isTeacher ? 'pointer' : 'default' }}>
-                            {block.completed && '✓'}
-                          </button>
-                          <div className="flex-1">
-                            <div className="text-xs font-medium" style={{ color: block.completed ? '#1ED8A0' : '#F5EDD8' }}>{block.title}</div>
-                            <div className="text-xs font-mono" style={{ color: '#6a5f52' }}>{block.duration} min</div>
-                          </div>
-                        </div>
-                        <p className="text-xs leading-relaxed ml-6 mb-2" style={{ color: '#9a8f82' }}>{block.description}</p>
-                        {isTeacher && (
-                          <input value={block.notes} onChange={e => updateNote(i, e.target.value)} onBlur={saveNotes}
-                            placeholder="Add notes…"
-                            style={{ fontSize: '11px', padding: '6px 10px', marginLeft: '24px', width: 'calc(100% - 24px)' }} />
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                <div className="text-center py-8">
+                  <div className="text-3xl mb-2">✦</div>
+                  <p className="text-sm font-semibold text-ink mb-1">AI lesson plan</p>
+                  <p className="text-xs text-muted mb-4">Gemini will draft a structured plan for this session — objectives, flow, and timing.</p>
+                  <button disabled className="btn-ghost w-full py-2.5 text-xs" style={{ opacity: 0.5 }}>Generate plan (coming soon)</button>
                 </div>
               )}
             </div>
           )}
 
-          {panel === 'docs' && (
-            <div className="flex-1 p-4 flex flex-col items-center justify-center text-center">
-              <div className="text-3xl mb-3">📎</div>
-              <p className="text-sm font-display mb-2">Share a resource</p>
-              <p className="text-xs text-muted mb-4 leading-relaxed">Paste a Google Doc, Notion page, or any link.</p>
-              <input placeholder="Paste a link…" style={{ marginBottom: '10px', fontSize: '12px', padding: '8px 12px' }} />
-              <button className="w-full py-2 rounded-xl text-white text-xs"
-                style={{ background: 'linear-gradient(135deg, #F0A830, #D03878)' }}>Share →</button>
+          {/* info */}
+          {panel === 'info' && (
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
+              <div className="glass p-3">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-faint mb-1">{isTeacher ? 'Teaching' : 'Learning from'}</div>
+                <div className="text-sm font-semibold text-ink">
+                  {isTeacher ? session.learner?.full_name : session.teacher?.full_name}
+                </div>
+              </div>
+              <div className="glass p-3">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-faint mb-1">Cost</div>
+                <div className="text-sm font-semibold text-ink">{session.tc_cost} TC · {session.duration_min} min</div>
+              </div>
+              <p className="text-xs text-muted px-1">When you end the session, you’ll both rate and confirm. The TC releases once both confirm.</p>
             </div>
           )}
         </div>
