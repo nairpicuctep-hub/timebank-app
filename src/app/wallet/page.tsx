@@ -5,21 +5,27 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
 
-const reasonLabel: Record<string, string> = {
-  session_earned: 'Taught a session',
-  session_spent:  'Booked a session',
-  admin_grant:    'Admin grant',
-  monthly_drip:   'Monthly credits',
-  welcome_bonus:  'Welcome bonus',
-  referral_bonus: 'Referral bonus',
-  refund:         'Session refund',
-  penalty:        'Penalty',
-  adjustment:     'Balance adjustment',
+/* -------------------------------------------------------------------------
+   Wallet (/wallet) — light/Bricolage.
+   Reads the REAL tc_ledger schema: d_available, d_escrowed, available_after,
+   forfeited, reason. Direction + amount are DERIVED from the signed deltas
+   (the old code assumed direction/amount/note columns that don't exist).
+   ------------------------------------------------------------------------- */
+
+const REASON: Record<string, { label: string; icon: string }> = {
+  signup_grant:   { label: 'Welcome bonus',     icon: '🎁' },
+  session_hold:   { label: 'Booked a session',  icon: '🔒' },
+  session_refund: { label: 'Session refund',    icon: '↩️' },
+  session_earn:   { label: 'Taught a session',  icon: '🎓' },
+  session_settle: { label: 'Session completed', icon: '✓' },
+  referral_bonus: { label: 'Referral bonus',    icon: '🤝' },
+  admin_grant:    { label: 'Admin grant',       icon: '⚙️' },
 }
 
 export default function WalletPage() {
   const [balance, setBalance] = useState({ available_balance: 0, escrowed_balance: 0 })
-  const [transactions, setTransactions] = useState<any[]>([])
+  const [txns, setTxns] = useState<any[]>([])
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -28,18 +34,15 @@ export default function WalletPage() {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth'); return }
-
-      const [balanceRes, txRes] = await Promise.all([
+      const [balRes, txRes, profRes] = await Promise.all([
         supabase.rpc('get_balance', { p_user_id: session.user.id }),
-        supabase.from('tc_ledger')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('created_at', { ascending: false })
-          .limit(20)
+        supabase.from('tc_ledger').select('*').eq('user_id', session.user.id)
+          .order('created_at', { ascending: false }).limit(30),
+        supabase.from('profiles').select('tc_earned_lifetime, tc_spent_lifetime, tier').eq('id', session.user.id).single(),
       ])
-
-      setBalance(balanceRes.data?.[0] || { available_balance: 0, escrowed_balance: 0 })
-      setTransactions(txRes.data || [])
+      setBalance(balRes.data?.[0] || { available_balance: 0, escrowed_balance: 0 })
+      setTxns(txRes.data || [])
+      setProfile(profRes.data)
       setLoading(false)
     }
     load()
@@ -47,80 +50,112 @@ export default function WalletPage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm font-mono" style={{ color: '#9a8f82' }}>Loading…</p>
+      <p className="text-sm font-mono text-muted">Loading…</p>
     </div>
   )
 
-  return (
-    <div className="min-h-screen pb-24 px-5 pt-14">
-      <h1 className="font-display text-3xl font-light mb-6 fade-up">TimeCredits ◈</h1>
+  const avail = Number(balance.available_balance || 0)
+  const escrow = Number(balance.escrowed_balance || 0)
+  const earned = Number(profile?.tc_earned_lifetime || 0)
+  const spent = Number(profile?.tc_spent_lifetime || 0)
+  const isPremium = profile?.tier === 'premium'
 
-      <div className="rounded-3xl p-7 mb-6 relative overflow-hidden fade-up-1"
-        style={{ background: 'linear-gradient(135deg, #F0A830, #E85030, #D03878)' }}>
-        <div className="absolute right-[-20px] bottom-[-30px] font-display text-[140px] leading-none opacity-[0.08] pointer-events-none select-none">◎</div>
-        <div className="text-xs font-mono uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Available balance</div>
-        <div className="font-display text-6xl font-light text-white leading-none">{balance.available_balance}</div>
-        <div className="text-xs mt-2" style={{ color: 'rgba(255,255,255,0.7)' }}>
-          ≈ {balance.available_balance} hours of learning anywhere on Earth
+  // derive a display row from a real ledger entry
+  function derive(tx: any) {
+    const dAvail = Number(tx.d_available || 0)
+    const dEscr = Number(tx.d_escrowed || 0)
+    // the headline number: net change to the user's own funds
+    // hold: available -1, escrow +1  → show as -1 (money left available)
+    // earn: available +1             → +1
+    // refund: available +1           → +1
+    // settle: escrow -1              → the spend finalised → show as -1
+    let amount = dAvail
+    if (tx.reason === 'session_settle') amount = -Math.abs(dEscr)
+    if (tx.reason === 'session_hold') amount = dAvail // already negative
+    const credit = amount > 0
+    const meta = REASON[tx.reason] || { label: tx.reason.replace(/_/g, ' '), icon: '◈' }
+    return { amount, credit, meta }
+  }
+
+  return (
+    <div className="min-h-screen pb-28 px-5 pt-12">
+      <h1 className="font-display font-semibold text-[26px] text-ink mb-5">TimeCredits ◈</h1>
+
+      {/* balance hero */}
+      <div className="grad-card rise p-7 mb-5">
+        <div className="blob blob-1" /><div className="blob blob-2" />
+        <div className="font-mono text-xs uppercase tracking-widest relative" style={{ opacity: 0.85 }}>Available balance</div>
+        <div className="font-display font-bold text-white leading-none relative tc-pop" style={{ fontSize: 64, marginTop: 6 }}>
+          {avail % 1 === 0 ? avail : avail.toFixed(1)}
         </div>
-        {balance.escrowed_balance > 0 && (
-          <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            + {balance.escrowed_balance} TC pending verification
+        <div className="text-xs relative" style={{ opacity: 0.85, marginTop: 8 }}>
+          ≈ {avail} {avail === 1 ? 'hour' : 'hours'} of learning, anywhere
+        </div>
+        {escrow > 0 && (
+          <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-pill relative"
+            style={{ background: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.35)', fontSize: 12 }}>
+            ⏳ {escrow} TC held in escrow
           </div>
         )}
-        <div className="flex gap-2 mt-5">
-          {['Earn more', 'History', 'Go Premium'].map(label => (
-            <button key={label} className="flex-1 py-2 rounded-xl text-xs font-medium text-white"
-              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}>
-              {label}
-            </button>
-          ))}
+      </div>
+
+      {/* lifetime stats */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="glass p-4 text-center">
+          <div className="font-display font-bold text-2xl grad-text">{earned % 1 === 0 ? earned : earned.toFixed(1)}</div>
+          <div className="text-xs text-muted mt-0.5">Earned (lifetime)</div>
+        </div>
+        <div className="glass p-4 text-center">
+          <div className="font-display font-bold text-2xl text-ink">{spent % 1 === 0 ? spent : spent.toFixed(1)}</div>
+          <div className="text-xs text-muted mt-0.5">Spent (lifetime)</div>
         </div>
       </div>
 
-      <div className="rounded-2xl p-5 mb-6 flex items-center gap-4 fade-up-2"
-        style={{ background: '#1c1917', border: '1px solid rgba(240,168,48,0.2)' }}>
-        <div className="text-2xl">✦</div>
-        <div className="flex-1">
-          <div className="text-sm font-medium mb-0.5">Go Premium — €4.99/mo</div>
-          <div className="text-xs text-muted">Get 5 TC every month, priority matching, and no limits.</div>
-        </div>
-        <button className="text-xs font-mono px-3 py-2 rounded-xl whitespace-nowrap"
-          style={{ background: 'linear-gradient(135deg, #F0A830, #D03878)', color: '#fff' }}>
-          Upgrade →
-        </button>
-      </div>
-
-      <div className="fade-up-2" style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.08)', borderRadius: '20px', overflow: 'hidden' }}>
-        <div className="px-5 py-4 font-display text-lg" style={{ borderBottom: '1px solid rgba(245,237,216,0.06)' }}>Activity</div>
-        {transactions.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm text-muted">
-            No transactions yet — teach your first session to earn TC!
+      {/* premium nudge — only for free tier; honest framing */}
+      {!isPremium && (
+        <div className="glass p-4 mb-5 flex items-center gap-3" style={{ border: '1px solid var(--tc-bd)' }}>
+          <div className="text-2xl">✦</div>
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-ink">Go Premium</div>
+            <div className="text-xs text-muted">Lift the 20 TC balance cap, host group sessions, priority matching.</div>
           </div>
-        ) : (
-          transactions.map(tx => (
-            <div key={tx.id} className="flex items-center gap-3 px-5 py-4"
-              style={{ borderBottom: '1px solid rgba(245,237,216,0.04)' }}>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
-                style={{ background: tx.direction === 'credit' ? 'rgba(30,216,160,0.1)' : 'rgba(208,56,120,0.1)' }}>
-                {tx.direction === 'credit' ? '↑' : '↓'}
+          <button className="btn-grad px-3 py-2 text-xs whitespace-nowrap">Upgrade →</button>
+        </div>
+      )}
+
+      {/* activity */}
+      <div className="glass overflow-hidden">
+        <div className="px-5 py-4 font-display font-semibold text-lg text-ink" style={{ borderBottom: '1px solid var(--line-2)' }}>
+          Activity
+        </div>
+        {txns.length === 0 ? (
+          <div className="px-5 py-8 text-center text-sm text-muted">
+            No activity yet — teach your first session to earn TC.
+          </div>
+        ) : txns.map(tx => {
+          const { amount, credit, meta } = derive(tx)
+          return (
+            <div key={tx.id} className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: '1px solid var(--line-2)' }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: credit ? 'var(--mint-bg)' : 'var(--cream-2)' }}>
+                {meta.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{reasonLabel[tx.reason] || tx.reason}</div>
-                {tx.note && <div className="text-xs text-muted truncate mt-0.5">{tx.note}</div>}
-                <div className="text-xs text-muted mt-0.5 font-mono">
+                <div className="text-sm font-medium text-ink truncate">{meta.label}</div>
+                <div className="text-xs text-muted font-mono mt-0.5">
                   {new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                  {tx.is_escrowed && ' · pending'}
+                  {Number(tx.forfeited) > 0 && ` · ${tx.forfeited} TC lost to cap`}
                 </div>
               </div>
-              <div className="font-mono text-sm font-medium flex-shrink-0"
-                style={{ color: tx.direction === 'credit' ? '#1ED8A0' : '#D03878' }}>
-                {tx.direction === 'credit' ? '+' : '−'}{tx.amount} TC
+              <div className="font-mono text-sm font-semibold flex-shrink-0"
+                style={{ color: credit ? 'var(--mint)' : 'var(--rose)' }}>
+                {credit ? '+' : '−'}{Math.abs(amount)} TC
               </div>
             </div>
-          ))
-        )}
+          )
+        })}
       </div>
+
       <BottomNav active="wallet" />
     </div>
   )
