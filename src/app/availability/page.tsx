@@ -4,9 +4,17 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
+import Link from 'next/link'
 
-const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
-const HOURS = Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}:00`)
+/* -------------------------------------------------------------------------
+   Availability (/availability) — light/Bricolage.
+   Wired to the `availability` table: day_of_week (0=Sun), start_time,
+   end_time, is_active. Add / toggle / delete slots.
+   ------------------------------------------------------------------------- */
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const HOURS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`)
 
 export default function AvailabilityPage() {
   const [slots, setSlots] = useState<any[]>([])
@@ -29,15 +37,18 @@ export default function AvailabilityPage() {
   }, [router])
 
   async function addSlot() {
+    if (newSlot.end_time <= newSlot.start_time) { alert('End time must be after start time.'); return }
     setAdding(true)
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const { data, error } = await supabase.from('availability').insert({
-      user_id: session.user.id,
-      ...newSlot
-    }).select().single()
-    if (!error && data) setSlots([...slots, data])
+    const { data, error } = await supabase.from('availability')
+      .insert({ user_id: session.user.id, ...newSlot, is_active: true }).select().single()
+    if (!error && data) {
+      setSlots([...slots, data].sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time)))
+    } else if (error) {
+      alert(error.message.includes('duplicate') ? 'You already have a slot at that time.' : error.message)
+    }
     setAdding(false)
   }
 
@@ -55,81 +66,81 @@ export default function AvailabilityPage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm font-mono" style={{ color: '#9a8f82' }}>Loading…</p>
+      <p className="text-sm font-mono text-muted">Loading…</p>
     </div>
   )
 
-  return (
-    <div className="min-h-screen pb-24 px-5 pt-14">
-      <h1 className="font-display text-3xl font-light mb-2">Availability</h1>
-      <p className="text-sm text-muted mb-6">Set when you're available to teach. Learners can book these slots.</p>
+  const activeCount = slots.filter(s => s.is_active).length
 
-      {/* Add slot */}
-      <div className="rounded-2xl p-5 mb-5" style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.08)' }}>
-        <h3 className="font-display text-lg mb-4">Add time slot</h3>
+  return (
+    <div className="min-h-screen pb-28 px-5 pt-12">
+      <Link href="/profile" className="text-sm text-muted">← Back</Link>
+      <h1 className="font-display font-semibold text-[26px] text-ink mt-3 mb-1">Availability</h1>
+      <p className="text-sm text-muted mb-2">Set when you can teach — learners book these slots.</p>
+
+      {/* visibility hint */}
+      <div className="glass p-3 mb-5 flex items-center gap-2.5">
+        <span className="text-lg">{activeCount >= 2 ? '✅' : '💡'}</span>
+        <p className="text-xs text-text">
+          {activeCount >= 2
+            ? `You’re visible to learners with ${activeCount} active slots.`
+            : `Add at least 2 active slots to appear in the teacher feed.`}
+        </p>
+      </div>
+
+      {/* add slot */}
+      <div className="glass p-5 mb-5">
+        <h3 className="font-display font-semibold text-lg text-ink mb-4">Add a time slot</h3>
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div>
             <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-1.5">Day</label>
-            <select value={newSlot.day_of_week}
-              onChange={e => setNewSlot({...newSlot, day_of_week: parseInt(e.target.value)})}>
+            <select value={newSlot.day_of_week} onChange={e => setNewSlot({ ...newSlot, day_of_week: parseInt(e.target.value) })}>
               {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-1.5">Start</label>
-            <select value={newSlot.start_time}
-              onChange={e => setNewSlot({...newSlot, start_time: e.target.value})}>
+            <select value={newSlot.start_time} onChange={e => setNewSlot({ ...newSlot, start_time: e.target.value })}>
               {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-1.5">End</label>
-            <select value={newSlot.end_time}
-              onChange={e => setNewSlot({...newSlot, end_time: e.target.value})}>
+            <select value={newSlot.end_time} onChange={e => setNewSlot({ ...newSlot, end_time: e.target.value })}>
               {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
         </div>
-        <button onClick={addSlot} disabled={adding}
-          className="w-full py-3 rounded-xl text-white text-sm font-medium"
-          style={{ background: 'linear-gradient(135deg, #F0A830, #E85030, #D03878)' }}>
+        <button onClick={addSlot} disabled={adding} className="btn-grad w-full py-3 text-sm">
           {adding ? 'Adding…' : '+ Add slot'}
         </button>
       </div>
 
-      {/* Existing slots */}
-      <div className="space-y-2">
+      {/* existing slots */}
+      <div className="flex flex-col gap-2">
         {slots.length === 0 ? (
-          <div className="rounded-xl p-6 text-center" style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.08)' }}>
-            <p className="text-sm text-muted">No slots yet — add your first availability above</p>
+          <div className="glass p-6 text-center">
+            <p className="text-sm text-muted">No slots yet — add your first availability above.</p>
           </div>
-        ) : (
-          slots.map(slot => (
-            <div key={slot.id} className="rounded-xl p-4 flex items-center gap-3"
-              style={{ background: '#1c1917', border: `1px solid ${slot.is_active ? 'rgba(240,168,48,0.2)' : 'rgba(245,237,216,0.06)'}` }}>
-              <div className="flex-1">
-                <div className="text-sm font-medium">{DAYS[slot.day_of_week]}</div>
-                <div className="text-xs font-mono text-muted">
-                  {slot.start_time.slice(0,5)} – {slot.end_time.slice(0,5)}
-                </div>
-              </div>
-              <button onClick={() => toggleSlot(slot.id, slot.is_active)}
-                className="text-xs px-3 py-1.5 rounded-lg"
-                style={{
-                  background: slot.is_active ? 'rgba(30,216,160,0.1)' : 'rgba(154,143,130,0.1)',
-                  color: slot.is_active ? '#1ED8A0' : '#9a8f82',
-                  border: `1px solid ${slot.is_active ? 'rgba(30,216,160,0.3)' : 'rgba(154,143,130,0.2)'}`
-                }}>
-                {slot.is_active ? 'Active' : 'Paused'}
-              </button>
-              <button onClick={() => deleteSlot(slot.id)}
-                className="text-xs px-2 py-1.5 rounded-lg"
-                style={{ background: 'rgba(232,80,48,0.1)', color: '#E85030', border: '1px solid rgba(232,80,48,0.2)' }}>
-                ✕
-              </button>
+        ) : slots.map(slot => (
+          <div key={slot.id} className="glass p-4 flex items-center gap-3"
+            style={{ opacity: slot.is_active ? 1 : 0.55 }}>
+            <div className="w-12 text-center">
+              <div className="font-display font-semibold text-ink">{DAYS_SHORT[slot.day_of_week]}</div>
             </div>
-          ))
-        )}
+            <div className="flex-1 font-mono text-sm text-text">
+              {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
+            </div>
+            <button onClick={() => toggleSlot(slot.id, slot.is_active)}
+              className="text-xs font-medium px-3 py-1.5 rounded-pill"
+              style={slot.is_active
+                ? { background: 'var(--mint-bg)', color: 'var(--mint)', border: '1px solid #bbf7d0' }
+                : { background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
+              {slot.is_active ? 'Active' : 'Paused'}
+            </button>
+            <button onClick={() => deleteSlot(slot.id)} className="text-muted px-1" style={{ fontSize: 18 }}>×</button>
+          </div>
+        ))}
       </div>
 
       <BottomNav active="profile" />
