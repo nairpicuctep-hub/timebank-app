@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+/* -------------------------------------------------------------------------
+   Review (/session/[id]/review) — light/Bricolage.
+   Calls confirm_session(p_session_id, p_rating, p_topic) — the safe RPC that
+   records the rating, stamps this party's confirmation, and releases the
+   escrow to the teacher once BOTH parties confirm.
+   ------------------------------------------------------------------------- */
+
 export default function ReviewPage() {
   const { id: sessionId } = useParams()
   const router = useRouter()
@@ -12,6 +19,8 @@ export default function ReviewPage() {
   const [topic, setTopic] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [isTeacher, setIsTeacher] = useState(false)
+  const [done, setDone] = useState(false)
+  const [bothConfirmed, setBothConfirmed] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -19,10 +28,13 @@ export default function ReviewPage() {
       const { data: { session: auth } } = await supabase.auth.getSession()
       if (!auth) { router.push('/auth'); return }
       const { data } = await supabase.from('sessions')
-        .select('*, skills(name, icon)').eq('id', sessionId).single()
-      setSession(data)
-      setIsTeacher(data?.teacher_id === auth.user.id)
-      setTopic(data?.skills?.name || '')
+        .select('*, skill:skill_id(name, icon), teacher:teacher_id(full_name), learner:learner_id(full_name)')
+        .eq('id', sessionId).single()
+      if (data) {
+        setSession(data)
+        setIsTeacher(data.teacher_id === auth.user.id)
+        setTopic(data.skill?.name || '')
+      }
     }
     load()
   }, [sessionId, router])
@@ -30,74 +42,85 @@ export default function ReviewPage() {
   async function submit() {
     setSubmitting(true)
     const supabase = createClient()
-    const { data: { session: auth } } = await supabase.auth.getSession()
-    if (!auth) return
-
-    const update = isTeacher
-      ? { teacher_rating: rating, teacher_topic_reported: topic, teacher_confirmed_at: new Date().toISOString() }
-      : { learner_rating: rating, learner_topic_reported: topic, learner_confirmed_at: new Date().toISOString() }
-
-    await supabase.from('sessions').update(update).eq('id', sessionId)
-
-    // Check if both confirmed — trigger verification
-    const { data: updated } = await supabase.from('sessions').select('*').eq('id', sessionId).single()
-    if (updated?.teacher_confirmed_at && updated?.learner_confirmed_at) {
-      await supabase.rpc('submit_trust_score', {
-        p_session_id: sessionId,
-        p_score: 80,
-        p_flags: []
-      })
-    }
-
-    router.push('/home')
+    const { data, error } = await supabase.rpc('confirm_session', {
+      p_session_id: sessionId,
+      p_rating: rating,
+      p_topic: topic || null,
+    })
+    setSubmitting(false)
+    if (error) { alert('Couldn’t submit: ' + error.message); return }
+    setBothConfirmed(!!data?.tc_released)
+    setDone(true)
   }
 
-  if (!session) return null
+  if (!session) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-sm font-mono text-muted">Loading…</p>
+    </div>
+  )
+
+  const otherName = isTeacher ? session.learner?.full_name : session.teacher?.full_name
+
+  if (done) return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center">
+      <div className="grad-card tc-pop" style={{ width: 120, height: 120, borderRadius: '50%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+        <div className="blob blob-1" /><div className="blob blob-2" />
+        <span style={{ fontSize: 44, color: '#fff', position: 'relative' }}>✦</span>
+      </div>
+      <h1 className="font-display font-semibold text-[28px] text-ink mb-2 rise-1">
+        {bothConfirmed ? 'TC released!' : 'Thanks for confirming'}
+      </h1>
+      <p className="text-sm text-muted mb-8 rise-2" style={{ maxWidth: 300 }}>
+        {bothConfirmed
+          ? `Both of you confirmed — the Time Credit has moved${isTeacher ? ' into your wallet' : ` to ${otherName || 'your teacher'}`}.`
+          : `Waiting for ${otherName || 'the other person'} to confirm too. The TC releases once you both do.`}
+      </p>
+      <button onClick={() => router.push('/home')} className="btn-grad w-full py-4 text-sm rise-3" style={{ maxWidth: 320 }}>
+        Back to home →
+      </button>
+    </div>
+  )
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="text-4xl mb-3">✦</div>
-          <h1 className="font-display text-3xl font-light mb-2">Session complete</h1>
-          <p className="text-sm text-muted">
-            {isTeacher ? 'Great teaching!' : 'How was your session?'}
-          </p>
+        <div className="text-center mb-7 rise">
+          <div className="text-4xl mb-3">{session.skill?.icon || '✦'}</div>
+          <h1 className="font-display font-semibold text-3xl text-ink mb-1">Session complete</h1>
+          <p className="text-sm text-muted">{isTeacher ? 'Nice work teaching!' : 'How was your session?'}</p>
         </div>
 
-        <div className="rounded-2xl p-6" style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.08)' }}>
+        <div className="glass p-6 rise-1">
           <div className="mb-5">
             <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-2">
               {isTeacher ? 'What did you teach?' : 'What did you learn?'}
             </label>
             <input value={topic} onChange={e => setTopic(e.target.value)}
-              placeholder={`e.g. ${session.skills?.name} basics`} />
+              placeholder={`e.g. ${session.skill?.name || 'the'} basics`} />
           </div>
 
           <div className="mb-6">
-            <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-3">
+            <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-3 text-center">
               Rate your {isTeacher ? 'learner' : 'teacher'}
             </label>
             <div className="flex gap-2 justify-center">
-              {[1,2,3,4,5].map(n => (
-                <button key={n} onClick={() => setRating(n)}
-                  className="text-2xl transition-all"
-                  style={{ opacity: n <= rating ? 1 : 0.25 }}>
-                  ★
+              {[1, 2, 3, 4, 5].map(n => (
+                <button key={n} onClick={() => setRating(n)} className="transition-all"
+                  style={{ fontSize: 30, opacity: n <= rating ? 1 : 0.25, transform: n <= rating ? 'scale(1.05)' : 'scale(1)' }}>
+                  ⭐
                 </button>
               ))}
             </div>
           </div>
 
-          <button onClick={submit} disabled={submitting || !topic}
-            className="w-full py-3 rounded-xl text-white text-sm font-medium disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #F0A830, #E85030, #D03878)' }}>
-            {submitting ? 'Submitting…' : 'Submit & release TC →'}
+          <button onClick={submit} disabled={submitting || !topic} className="btn-grad w-full py-3.5 text-sm">
+            {submitting ? 'Submitting…' : 'Confirm & release TC →'}
           </button>
         </div>
 
         <p className="text-center text-xs text-muted mt-4">
-          Your TimeCredits will be released once both parties confirm.
+          Your TimeCredit releases once both of you confirm the session.
         </p>
       </div>
     </div>
