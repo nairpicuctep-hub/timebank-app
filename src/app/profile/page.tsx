@@ -6,24 +6,33 @@ import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
 
-const LEVEL_NAMES = ['','Seedling','Sprout','Learner','Scholar','Mentor','Master','Legend']
-const LEVEL_ICONS = ['','🌱','🌿','📚','🎓','🧑‍🏫','⭐','🏆']
+/* -------------------------------------------------------------------------
+   Profile (/profile) — light/Bricolage.
+   Fixed vs old version:
+     • badges from `user_badges` (was `badges_earned` — wrong table)
+     • real level names: Time Seed → TimeBank Legend (was Seedling/Sprout…)
+     • badge codes match the seeded `badges` table
+   ------------------------------------------------------------------------- */
+
+const LEVEL_NAMES = ['', 'Time Seed', 'Curious Learner', 'Active Exchanger', 'Mentor Spark', 'Knowledge Weaver', 'Community Pillar', 'TimeBank Legend']
+const LEVEL_ICONS = ['', '🌱', '📚', '⚡', '✨', '🧵', '🏛️', '🏆']
 const LEVEL_XP    = [0, 0, 100, 250, 500, 1000, 2000, 5000]
 
+// matches the seeded `badges` table (id = code)
 const ALL_BADGES = [
-  { id: 'first_session',    name: 'First Session',    icon: '🎯' },
-  { id: 'first_teach',      name: 'First Teacher',    icon: '🎓' },
-  { id: 'streak_3',         name: '3-Day Streak',     icon: '🔥' },
-  { id: 'streak_7',         name: 'Week Warrior',     icon: '⚡' },
-  { id: 'streak_30',        name: 'Monthly Master',   icon: '💎' },
-  { id: 'sessions_5',       name: 'Regular',          icon: '⭐' },
-  { id: 'sessions_10',      name: 'Dedicated',        icon: '🌟' },
-  { id: 'tc_10',            name: 'Credit Earner',    icon: '✦' },
-  { id: 'multi_skill',      name: 'Polymath',         icon: '🧠' },
-  { id: 'top_rated',        name: 'Top Rated',        icon: '⭐' },
-  { id: 'profile_complete', name: 'Complete',         icon: '✅' },
-  { id: 'skill_mirror',     name: 'Self-Aware',       icon: '🪞' },
-  { id: 'countries_3',      name: 'Global',           icon: '🌍' },
+  { id: 'skill_mirror',        name: 'Skill Mirror',        icon: '🪞' },
+  { id: 'first_session',       name: 'First Session',       icon: '🎯' },
+  { id: '7_day_streak',        name: '7-Day Streak',        icon: '🔥' },
+  { id: '30_day_streak',       name: '30-Day Streak',       icon: '🌕' },
+  { id: 'top_rated',           name: 'Top Rated',           icon: '⭐' },
+  { id: '10_sessions',         name: '10 Sessions',         icon: '🔟' },
+  { id: '25_sessions',         name: '25 Sessions',         icon: '🏅' },
+  { id: 'multilingual',        name: 'Multilingual',        icon: '🌍' },
+  { id: 'early_adopter',       name: 'Early Adopter',       icon: '🌱' },
+  { id: 'group_host',          name: 'Group Host',          icon: '👥' },
+  { id: 'perfect_month',       name: 'Perfect Month',       icon: '📅' },
+  { id: 'community_connector', name: 'Community Connector', icon: '🤝' },
+  { id: 'timebank_legend',     name: 'TimeBank Legend',     icon: '🏆' },
 ]
 
 export default function ProfilePage() {
@@ -42,23 +51,19 @@ export default function ProfilePage() {
 
       const [profileRes, skillsRes, balanceRes, badgesRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-        supabase.from('user_skills')
-          .select('*, skills(name, category, icon, slug)')
-          .eq('user_id', session.user.id)
-          .order('role'),
+        supabase.from('user_skills').select('*, skills(name, category, icon, slug)').eq('user_id', session.user.id).order('role'),
         supabase.rpc('get_balance', { p_user_id: session.user.id }),
-        supabase.from('badges_earned')
-          .select('badge_id')
-          .eq('user_id', session.user.id)
+        supabase.from('user_badges').select('badge_id').eq('user_id', session.user.id),
       ])
 
-      await supabase.rpc('update_streak', { p_user_id: session.user.id })
+      // touch streak on visit (safe, idempotent per day)
+      supabase.rpc('update_streak', { p_user_id: session.user.id })
 
       setData({
         profile: profileRes.data,
         skills: skillsRes.data || [],
         balance: balanceRes.data?.[0] || { available_balance: 0 },
-        user: session.user
+        user: session.user,
       })
       setBadges(badgesRes.data || [])
       setLoading(false)
@@ -72,14 +77,16 @@ export default function ProfilePage() {
     setUploading(true)
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
+    if (!session) { setUploading(false); return }
     const ext = file.name.split('.').pop()
     const path = `${session.user.id}/avatar.${ext}`
     const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
     if (!error) {
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', session.user.id)
-      setData((prev: any) => ({ ...prev, profile: { ...prev.profile, avatar_url: publicUrl } }))
+      setData((prev: any) => ({ ...prev, profile: { ...prev.profile, avatar_url: `${publicUrl}?t=${Date.now()}` } }))
+    } else {
+      alert('Upload failed: ' + error.message)
     }
     setUploading(false)
   }
@@ -92,117 +99,107 @@ export default function ProfilePage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm font-mono" style={{ color: '#9a8f82' }}>Loading…</p>
+      <p className="text-sm font-mono text-muted">Loading…</p>
     </div>
   )
 
-  const { profile, skills, balance, user } = data
+  const { profile, skills, balance } = data
   const firstName = profile?.full_name?.split(' ')[0] || 'You'
   const level = profile?.level || 1
   const xp = profile?.xp || 0
   const streak = profile?.streak_days || 0
   const nextXP = LEVEL_XP[Math.min(level + 1, 7)]
   const curXP = LEVEL_XP[level]
-  const xpPct = nextXP > curXP ? Math.round(((xp - curXP) / (nextXP - curXP)) * 100) : 100
+  const xpPct = nextXP > curXP ? Math.min(100, Math.round(((xp - curXP) / (nextXP - curXP)) * 100)) : 100
   const earnedIds = new Set(badges.map((b: any) => b.badge_id))
-
   const teachSkills = skills.filter((s: any) => s.role === 'teacher')
   const learnSkills = skills.filter((s: any) => s.role === 'learner')
+  const rating = Number(profile?.rating_as_teacher || 0)
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-28">
 
-      {/* Hero */}
+      {/* hero */}
       <div className="px-5 pt-14 pb-6 text-center"
-        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(240,168,48,0.1) 0%, transparent 55%)' }}>
-
-        {/* Avatar */}
+        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(240,168,48,0.14) 0%, transparent 60%)' }}>
         <div className="relative inline-block mb-3">
-          <div className="w-18 h-18 rounded-full overflow-hidden flex items-center justify-center font-display text-2xl text-white cursor-pointer"
-            style={{ width: 72, height: 72, background: profile?.avatar_url ? 'transparent' : 'linear-gradient(135deg, #F0A830, #E85030, #D03878)' }}
+          <div className="rounded-full overflow-hidden flex items-center justify-center font-display text-2xl text-white cursor-pointer"
+            style={{ width: 80, height: 80, background: profile?.avatar_url ? 'transparent' : 'var(--grad)', boxShadow: '0 0 0 3px rgba(249,115,22,0.2)' }}
             onClick={() => fileRef.current?.click()}>
             {profile?.avatar_url
               ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="avatar" />
               : firstName[0]?.toUpperCase()}
           </div>
           <button onClick={() => fileRef.current?.click()}
-            className="absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px]"
-            style={{ background: '#242018', border: '1px solid rgba(245,237,216,0.15)' }}>
+            className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center text-xs text-white"
+            style={{ background: 'var(--coral)', border: '2px solid var(--cream-1)' }}>
             {uploading ? '…' : '＋'}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
         </div>
 
-        <div className="font-display text-xl font-light mb-0.5">{profile?.full_name || 'Your Name'}</div>
-        <div className="text-xs font-mono" style={{ color: '#6a5f52' }}>{profile?.location || 'Antwerp'}</div>
+        <div className="font-display font-semibold text-2xl text-ink">{profile?.full_name || 'Your Name'}</div>
+        <div className="text-xs font-mono text-muted mt-0.5">{profile?.location || 'Antwerp'}</div>
 
-        {/* Level */}
-        <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-full text-xs font-mono"
-          style={{ background: 'rgba(240,168,48,0.08)', border: '1px solid rgba(240,168,48,0.15)', color: '#F0A830' }}>
+        <div className="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 rounded-pill text-xs font-medium"
+          style={{ background: 'var(--tc-bg)', border: '1px solid var(--tc-bd)', color: 'var(--tc-tx)' }}>
           {LEVEL_ICONS[level]} Level {level} · {LEVEL_NAMES[level]}
         </div>
 
-        {/* XP bar */}
-        <div className="mt-3 mx-6">
-          <div className="flex justify-between text-[10px] font-mono mb-1" style={{ color: '#6a5f52' }}>
+        {/* xp bar */}
+        <div className="mt-4 mx-6">
+          <div className="flex justify-between text-[10px] font-mono mb-1 text-muted">
             <span>{xp} XP</span>
-            <span>{level < 7 ? `${nextXP} XP` : 'Max'}</span>
+            <span>{level < 7 ? `${nextXP} XP` : 'Max level'}</span>
           </div>
-          <div className="h-1.5 rounded-full" style={{ background: 'rgba(245,237,216,0.06)' }}>
-            <div className="h-full rounded-full" style={{ width: `${xpPct}%`, background: 'linear-gradient(90deg, #F0A830, #D03878)' }} />
+          <div className="h-2 rounded-pill" style={{ background: 'rgba(120,70,40,0.08)' }}>
+            <div className="h-full rounded-pill" style={{ width: `${xpPct}%`, background: 'var(--grad)' }} />
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="flex justify-center gap-6 mt-4">
+        {/* stats */}
+        <div className="flex justify-center gap-7 mt-5">
           {[
-            { val: balance.available_balance, label: 'TC Balance', color: '#F0A830' },
+            { val: balance.available_balance, label: 'TC', grad: true },
             { val: profile?.sessions_taught || 0, label: 'Taught' },
-            { val: streak > 0 ? `${streak} 🔥` : '0', label: 'Streak' },
-            { val: profile?.rating_as_teacher > 0 ? Number(profile.rating_as_teacher).toFixed(1) : '—', label: 'Rating' },
-          ].map(({ val, label, color }) => (
-            <div key={label} className="text-center">
-              <div className="font-display text-lg font-light" style={{ color: color || '#F5EDD8' }}>{val}</div>
-              <div className="text-[9px] font-mono uppercase tracking-widest" style={{ color: '#6a5f52' }}>{label}</div>
+            { val: streak > 0 ? `${streak}🔥` : '0', label: 'Streak' },
+            { val: rating > 0 ? rating.toFixed(1) : '—', label: 'Rating' },
+          ].map(s => (
+            <div key={s.label} className="text-center">
+              <div className={`font-display font-bold text-xl ${s.grad ? 'grad-text' : 'text-ink'}`}>{s.val}</div>
+              <div className="text-[9px] font-mono uppercase tracking-widest text-faint">{s.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Skills */}
-      <div className="px-5 mb-3">
-        <div className="rounded-2xl p-4" style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.06)' }}>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-medium">Skills</h3>
-            <Link href="/onboarding">
-              <span className="text-[10px] font-mono" style={{ color: '#F0A830' }}>Edit →</span>
-            </Link>
-          </div>
+      <div className="px-5 flex flex-col gap-3">
 
+        {/* skills */}
+        <div className="glass p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-display font-semibold text-base text-ink">Skills</h3>
+            <Link href="/onboarding"><span className="text-xs font-medium grad-text">Edit →</span></Link>
+          </div>
           {skills.length === 0 ? (
             <div>
               <p className="text-xs text-muted mb-2">No skills yet</p>
-              <Link href="/onboarding">
-                <span className="text-xs font-mono" style={{ color: '#F0A830' }}>Add skills →</span>
-              </Link>
+              <Link href="/onboarding"><span className="text-xs font-medium grad-text">Add skills →</span></Link>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               {teachSkills.length > 0 && (
                 <div>
-                  <div className="text-[9px] font-mono uppercase tracking-widest mb-2" style={{ color: '#6a5f52' }}>I teach</div>
-                  <div className="space-y-2">
+                  <div className="text-[9px] font-mono uppercase tracking-widest mb-2 text-faint">I teach</div>
+                  <div className="flex flex-col gap-2">
                     {teachSkills.map((s: any) => (
                       <div key={s.id} className="flex items-center gap-3">
-                        <div className="text-xs w-24 flex-shrink-0 truncate" style={{ color: '#F5EDD8' }}>
-                          {s.skills?.name || '—'}
+                        <div className="text-xs w-28 flex-shrink-0 truncate text-text">{s.skills?.icon} {s.skills?.name || '—'}</div>
+                        <div className="flex-1 h-1.5 rounded-pill" style={{ background: 'rgba(120,70,40,0.08)' }}>
+                          <div className="h-full rounded-pill" style={{ width: `${(s.proficiency || 2) * 25}%`, background: 'var(--grad)' }} />
                         </div>
-                        <div className="flex-1 h-1.5 rounded-full" style={{ background: 'rgba(245,237,216,0.06)' }}>
-                          <div className="h-full rounded-full"
-                            style={{ width: `${(s.proficiency || 3) * 20}%`, background: 'linear-gradient(90deg, #F0A830, #D03878)' }} />
-                        </div>
-                        <div className="text-[9px] font-mono w-16 text-right" style={{ color: '#9a8f82' }}>
-                          {['','Beginner','Intermediate','Advanced','Expert'][s.proficiency] || 'Int.'}
+                        <div className="text-[9px] font-mono w-16 text-right text-muted">
+                          {['', 'Beginner', 'Intermediate', 'Advanced', 'Expert'][s.proficiency] || 'Int.'}
                         </div>
                       </div>
                     ))}
@@ -211,12 +208,12 @@ export default function ProfilePage() {
               )}
               {learnSkills.length > 0 && (
                 <div>
-                  <div className="text-[9px] font-mono uppercase tracking-widest mb-2" style={{ color: '#6a5f52' }}>I learn</div>
+                  <div className="text-[9px] font-mono uppercase tracking-widest mb-2 text-faint">I learn</div>
                   <div className="flex flex-wrap gap-2">
                     {learnSkills.map((s: any) => (
-                      <span key={s.id} className="text-xs px-2.5 py-1 rounded-full"
-                        style={{ background: 'rgba(30,216,160,0.08)', border: '1px solid rgba(30,216,160,0.2)', color: '#1ED8A0' }}>
-                        {s.skills?.name || '—'}
+                      <span key={s.id} className="text-xs px-2.5 py-1 rounded-pill"
+                        style={{ background: 'var(--mint-bg)', border: '1px solid #bbf7d0', color: 'var(--mint)' }}>
+                        {s.skills?.icon} {s.skills?.name || '—'}
                       </span>
                     ))}
                   </div>
@@ -225,24 +222,21 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Badges */}
-      <div className="px-5 mb-3">
-        <div className="rounded-2xl p-4" style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.06)' }}>
+        {/* badges */}
+        <div className="glass p-4">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-medium">Badges</h3>
-            <span className="text-[10px] font-mono" style={{ color: '#6a5f52' }}>{earnedIds.size}/{ALL_BADGES.length}</span>
+            <h3 className="font-display font-semibold text-base text-ink">Badges</h3>
+            <span className="text-[10px] font-mono text-faint">{earnedIds.size}/{ALL_BADGES.length}</span>
           </div>
           <div className="grid grid-cols-5 gap-2">
             {ALL_BADGES.map(b => {
               const earned = earnedIds.has(b.id)
               return (
-                <div key={b.id} title={b.name}
-                  className="flex flex-col items-center gap-1 p-2 rounded-xl"
-                  style={{ background: earned ? 'rgba(240,168,48,0.08)' : 'rgba(245,237,216,0.02)', opacity: earned ? 1 : 0.3 }}>
-                  <span className="text-xl">{b.icon}</span>
-                  <span className="text-[8px] text-center leading-tight font-mono" style={{ color: earned ? '#F5EDD8' : '#9a8f82' }}>
+                <div key={b.id} title={b.name} className="flex flex-col items-center gap-1 p-2 rounded-2xl"
+                  style={{ background: earned ? 'var(--tc-bg)' : 'transparent', opacity: earned ? 1 : 0.35 }}>
+                  <span className="text-xl" style={{ filter: earned ? 'none' : 'grayscale(1)' }}>{b.icon}</span>
+                  <span className="text-[8px] text-center leading-tight font-mono" style={{ color: earned ? 'var(--text)' : 'var(--faint)' }}>
                     {b.name}
                   </span>
                 </div>
@@ -250,28 +244,30 @@ export default function ProfilePage() {
             })}
           </div>
         </div>
-      </div>
 
-      {/* Tier + sign out */}
-      <div className="px-5 mb-3">
-        <div className="rounded-2xl p-3.5 flex items-center gap-3 mb-2"
-          style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.06)' }}>
-          <span className="text-[10px] font-mono px-2 py-1 rounded-full capitalize"
-            style={{ background: 'rgba(240,168,48,0.1)', border: '1px solid rgba(240,168,48,0.2)', color: '#F0A830' }}>
+        {/* availability link */}
+        <Link href="/availability" className="glass p-4 flex items-center gap-3">
+          <span className="text-xl">📅</span>
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-ink">Manage availability</div>
+            <div className="text-xs text-muted">Set when you can teach</div>
+          </div>
+          <span className="text-muted">→</span>
+        </Link>
+
+        {/* tier + sign out */}
+        <div className="glass p-4 flex items-center gap-3">
+          <span className="text-xs font-mono px-2.5 py-1 rounded-pill capitalize"
+            style={{ background: 'var(--tc-bg)', border: '1px solid var(--tc-bd)', color: 'var(--tc-tx)' }}>
             {profile?.tier || 'free'}
           </span>
           <span className="text-xs text-muted flex-1">
-            {profile?.tier === 'premium' ? '5 TC / month · Priority' : '2 TC / month · Basic'}
+            {profile?.tier === 'premium' ? 'Premium — no balance cap' : 'Free — 20 TC balance cap'}
           </span>
-          {profile?.tier !== 'premium' && (
-            <span className="text-xs font-mono" style={{ color: '#F0A830' }}>Upgrade →</span>
-          )}
+          {profile?.tier !== 'premium' && <span className="text-xs font-medium grad-text">Upgrade →</span>}
         </div>
-        <button onClick={signOut}
-          className="w-full py-3 rounded-xl text-xs font-mono"
-          style={{ background: '#1c1917', border: '1px solid rgba(245,237,216,0.06)', color: '#6a5f52' }}>
-          Sign out
-        </button>
+
+        <button onClick={signOut} className="btn-ghost w-full py-3 text-xs">Sign out</button>
       </div>
 
       <BottomNav active="profile" />
