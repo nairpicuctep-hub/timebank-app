@@ -5,12 +5,13 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 /* -------------------------------------------------------------------------
-   Session room (/session/[id]) — light/Bricolage.
+   Session room (/session/[id]) — light/Bricolage + integrity hooks.
    • Jitsi embed (room from sessions.daily_room_name)
-   • Realtime chat via session_messages + Supabase Realtime
-   • AI lesson-plan panel: STUB for now (reads course_plans.plan if present;
-     "Generate" is a fast-follow once Gemini is wired server-side)
-   • End session → complete_session(p_session_id, p_actual_end) → /review
+   • Realtime chat via session_messages
+   • Integrity: marks presence (session_mark_joined) + heartbeats active time
+     (session_heartbeat) every 30s while the tab is visible. Feeds the
+     anti-gaming engine that scores the session at settlement.
+   • End → complete_session → /review
    ------------------------------------------------------------------------- */
 
 export default function SessionRoomPage() {
@@ -52,7 +53,9 @@ export default function SessionRoomPage() {
       setPlan(Array.isArray(planRes.data?.plan) ? planRes.data.plan : [])
       setLoading(false)
 
-      // realtime chat
+      // INTEGRITY: mark presence on join
+      supabase.rpc('session_mark_joined', { p_session_id: sessionId })
+
       channel = supabase.channel(`session-${sessionId}`)
         .on('postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'session_messages', filter: `session_id=eq.${sessionId}` },
@@ -62,6 +65,17 @@ export default function SessionRoomPage() {
     load()
     return () => { if (channel) createClient().removeChannel(channel) }
   }, [sessionId, router])
+
+  // INTEGRITY: heartbeat active time every 30s, only while tab is visible
+  useEffect(() => {
+    const supabase = createClient()
+    const beat = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        supabase.rpc('session_heartbeat', { p_session_id: sessionId, p_seconds: 30 })
+      }
+    }, 30000)
+    return () => clearInterval(beat)
+  }, [sessionId])
 
   useEffect(() => {
     const t = setInterval(() => setElapsed(e => e + 1), 1000)
@@ -88,24 +102,14 @@ export default function SessionRoomPage() {
 
   const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm font-mono text-muted">Joining session…</p>
-    </div>
-  )
-  if (!session) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm text-muted">Session not found</p>
-    </div>
-  )
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-sm font-mono text-muted">Joining session…</p></div>
+  if (!session) return <div className="min-h-screen flex items-center justify-center"><p className="text-sm text-muted">Session not found</p></div>
 
   const room = session.daily_room_name ? `timebank-${session.daily_room_name}` : `timebank-${String(sessionId).slice(0, 12)}`
   const jitsiUrl = `https://meet.jit.si/${room}#userInfo.displayName="${encodeURIComponent(currentUser?.email || 'User')}"&config.prejoinPageEnabled=false&interfaceConfig.SHOW_JITSI_WATERMARK=false`
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh', background: 'var(--cream-1)' }}>
-
-      {/* top bar */}
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 glass" style={{ borderRadius: 0 }}>
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--mint)', boxShadow: '0 0 6px var(--mint)' }} />
@@ -113,23 +117,18 @@ export default function SessionRoomPage() {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-xs font-mono px-2.5 py-1 rounded-pill" style={{ background: 'var(--mint-bg)', color: 'var(--mint)' }}>⏱ {fmtTime(elapsed)}</span>
-          <button onClick={endSession} disabled={ending}
-            className="text-xs font-semibold px-3 py-1.5 rounded-btn"
+          <button onClick={endSession} disabled={ending} className="text-xs font-semibold px-3 py-1.5 rounded-btn"
             style={{ background: 'var(--request-bg)', color: 'var(--rose)', border: '1px solid #fecdd3' }}>
             {ending ? '…' : 'End'}
           </button>
         </div>
       </div>
 
-      {/* body: video + sidebar (stacks on mobile) */}
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
-
-        {/* video */}
         <div className="flex-1 relative" style={{ background: '#0a0806', minHeight: 220 }}>
           <iframe src={jitsiUrl} allow="camera; microphone; fullscreen; display-capture" className="w-full h-full border-0" />
         </div>
 
-        {/* sidebar */}
         <div className="flex flex-col flex-shrink-0 glass md:w-80" style={{ borderRadius: 0, borderLeft: '1px solid var(--line-2)' }}>
           <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid var(--line-2)' }}>
             {([['chat', '💬', 'Chat'], ['ai', '✦', 'AI Plan'], ['info', 'ℹ️', 'Info']] as const).map(([p, icon, label]) => (
@@ -141,7 +140,6 @@ export default function SessionRoomPage() {
             ))}
           </div>
 
-          {/* chat */}
           {panel === 'chat' && (
             <div className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 no-scrollbar">
@@ -151,9 +149,7 @@ export default function SessionRoomPage() {
                   return (
                     <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                       <div className="px-3 py-2 rounded-2xl text-sm max-w-[80%]"
-                        style={mine
-                          ? { background: 'var(--grad)', color: '#fff' }
-                          : { background: 'var(--cream-2)', color: 'var(--text)', border: '1px solid var(--line)' }}>
+                        style={mine ? { background: 'var(--grad)', color: '#fff' } : { background: 'var(--cream-2)', color: 'var(--text)', border: '1px solid var(--line)' }}>
                         {m.body}
                       </div>
                     </div>
@@ -162,14 +158,12 @@ export default function SessionRoomPage() {
                 <div ref={chatEndRef} />
               </div>
               <div className="p-3 flex gap-2 flex-shrink-0" style={{ borderTop: '1px solid var(--line-2)' }}>
-                <input value={msg} onChange={e => setMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
-                  placeholder="Message…" style={{ fontSize: 13 }} />
+                <input value={msg} onChange={e => setMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Message…" style={{ fontSize: 13 }} />
                 <button onClick={send} className="btn-grad px-4 text-sm flex-shrink-0">→</button>
               </div>
             </div>
           )}
 
-          {/* AI plan — stub */}
           {panel === 'ai' && (
             <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
               {plan.length > 0 ? (
@@ -185,21 +179,18 @@ export default function SessionRoomPage() {
                 <div className="text-center py-8">
                   <div className="text-3xl mb-2">✦</div>
                   <p className="text-sm font-semibold text-ink mb-1">AI lesson plan</p>
-                  <p className="text-xs text-muted mb-4">Gemini will draft a structured plan for this session — objectives, flow, and timing.</p>
+                  <p className="text-xs text-muted mb-4">Gemini will draft a structured plan — objectives, flow, timing.</p>
                   <button disabled className="btn-ghost w-full py-2.5 text-xs" style={{ opacity: 0.5 }}>Generate plan (coming soon)</button>
                 </div>
               )}
             </div>
           )}
 
-          {/* info */}
           {panel === 'info' && (
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
               <div className="glass p-3">
                 <div className="text-[9px] font-mono uppercase tracking-widest text-faint mb-1">{isTeacher ? 'Teaching' : 'Learning from'}</div>
-                <div className="text-sm font-semibold text-ink">
-                  {isTeacher ? session.learner?.full_name : session.teacher?.full_name}
-                </div>
+                <div className="text-sm font-semibold text-ink">{isTeacher ? session.learner?.full_name : session.teacher?.full_name}</div>
               </div>
               <div className="glass p-3">
                 <div className="text-[9px] font-mono uppercase tracking-widest text-faint mb-1">Cost</div>
