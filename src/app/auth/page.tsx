@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 type Mode = 'login' | 'signup' | 'forgot'
 
 export default function AuthPage() {
+  const t = useTranslations('auth')
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,11 +29,11 @@ export default function AuthPage() {
     setLoading(false)
     if (error) {
       if (error.message.includes('Email not confirmed')) {
-        setError('Your account isn\u2019t confirmed yet.')
-        setHint({ text: 'Need a new confirmation link?', label: 'Resend it', action: resendConfirmation })
+        setError(t('errNotConfirmed'))
+        setHint({ text: t('hintResend'), label: t('hintResendLabel'), action: resendConfirmation })
       } else if (error.message.includes('Invalid login credentials')) {
-        setError('That email and password didn\u2019t match.')
-        setHint({ text: 'Forgot your password, or signed up with Google?', label: 'Reset password', action: () => { setMode('forgot'); reset() } })
+        setError(t('errBadCredentials'))
+        setHint({ text: t('hintResetPw'), label: t('hintResetLabel'), action: () => { setMode('forgot'); reset() } })
       } else setError(error.message)
       return
     }
@@ -41,25 +43,25 @@ export default function AuthPage() {
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true); reset()
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); setLoading(false); return }
+    if (password.length < 8) { setError(t('errPasswordShort')); setLoading(false); return }
     const { data, error } = await supabase.auth.signUp({
       email, password, options: { data: { full_name: name }, emailRedirectTo: `${location.origin}/auth/confirm` },
     })
     setLoading(false)
     if (error) {
       if (error.message.toLowerCase().includes('already') || error.message.includes('registered')) {
-        setError('An account with this email already exists.')
-        setHint({ text: 'Try signing in instead.', label: 'Go to sign in', action: () => { setMode('login'); reset() } })
+        setError(t('errEmailExists'))
+        setHint({ text: t('hintTrySignIn'), label: t('hintGoToSignIn'), action: () => { setMode('login'); reset() } })
       } else setError(error.message)
       return
     }
     if (data.user && data.user.identities && data.user.identities.length === 0) {
-      setError('An account with this email already exists.')
-      setHint({ text: 'Try signing in instead.', label: 'Go to sign in', action: () => { setMode('login'); reset() } })
+      setError(t('errEmailExists'))
+      setHint({ text: t('hintTrySignIn'), label: t('hintGoToSignIn'), action: () => { setMode('login'); reset() } })
       return
     }
     if (data.session) { router.push('/auth/confirm'); return }
-    setSuccess('Account created! Check your email for a confirmation link, then sign in.')
+    setSuccess(t('successSignup'))
   }
 
   async function handleForgot(e: React.FormEvent) {
@@ -68,7 +70,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/auth/confirm` })
     setLoading(false)
     if (error) { setError(error.message); return }
-    setSuccess('Password reset link sent \u2014 check your inbox.')
+    setSuccess(t('successReset'))
   }
 
   async function resendConfirmation() {
@@ -76,7 +78,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${location.origin}/auth/confirm` } })
     setLoading(false)
     if (error) { setError(error.message); return }
-    setSuccess('Confirmation email re-sent \u2014 check your inbox (and spam).')
+    setSuccess(t('successResend'))
   }
 
   async function handleOAuth(provider: 'google' | 'facebook' | 'linkedin_oidc') {
@@ -84,13 +86,13 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider, options: { redirectTo: `${location.origin}/auth/confirm` },
     })
-    if (error) setError(`Couldn\u2019t connect to ${provider === 'linkedin_oidc' ? 'LinkedIn' : provider}. ${error.message}`)
+    if (error) setError(t('errOAuth', { provider: provider === 'linkedin_oidc' ? 'LinkedIn' : provider, message: error.message }))
   }
 
   const titles = {
-    login:  { h: 'Welcome back', s: 'Sign in to your account' },
-    signup: { h: 'Create account', s: 'Join TimeBank Academy \u2014 free forever' },
-    forgot: { h: 'Reset password', s: "We'll send you a reset link" },
+    login:  { h: t('welcomeBack'),    s: t('signInSubtitle') },
+    signup: { h: t('createAccount'),  s: t('signUpSubtitle') },
+    forgot: { h: t('resetPassword'),  s: t('resetSubtitle') },
   }
   const labelCls = 'block text-xs font-mono text-muted uppercase tracking-widest mb-1.5'
 
@@ -114,7 +116,7 @@ export default function AuthPage() {
                 <button key={m} onClick={() => { setMode(m); reset() }}
                   className="flex-1 py-2 rounded-btn text-sm font-semibold transition-all"
                   style={mode === m ? { background: 'var(--grad)', color: '#fff' } : { color: 'var(--muted)' }}>
-                  {m === 'login' ? 'Sign in' : 'Sign up'}
+                  {m === 'login' ? t('signIn') : t('signUp')}
                 </button>
               ))}
             </div>
@@ -127,32 +129,32 @@ export default function AuthPage() {
             <div className="text-center py-4">
               <div className="text-3xl mb-3">✦</div>
               <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--mint)' }}>{success}</p>
-              <button onClick={() => { setSuccess(''); setMode('login') }} className="btn-grad w-full py-3 text-sm">Sign in now →</button>
+              <button onClick={() => { setSuccess(''); setMode('login') }} className="btn-grad w-full py-3 text-sm">{t('signInNow')} →</button>
             </div>
           ) : (
             <>
               <form onSubmit={mode === 'login' ? handleEmailLogin : mode === 'signup' ? handleSignup : handleForgot}>
                 {mode === 'signup' && (
                   <div className="mb-3">
-                    <label className={labelCls}>Full name</label>
-                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" required />
+                    <label className={labelCls}>{t('fullName')}</label>
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder={t('fullNamePlaceholder')} required />
                   </div>
                 )}
                 <div className="mb-3">
-                  <label className={labelCls}>Email</label>
+                  <label className={labelCls}>{t('email')}</label>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
                 </div>
                 {mode !== 'forgot' && (
                   <div className="mb-4">
                     <div className="flex justify-between items-center mb-1.5">
-                      <label className="text-xs font-mono text-muted uppercase tracking-widest">Password</label>
+                      <label className="text-xs font-mono text-muted uppercase tracking-widest">{t('password')}</label>
                       {mode === 'login' && (
                         <button type="button" onClick={() => { setMode('forgot'); reset() }}
-                          className="text-xs font-mono grad-text font-semibold">Forgot?</button>
+                          className="text-xs font-mono grad-text font-semibold">{t('forgot')}</button>
                       )}
                     </div>
                     <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                      placeholder={mode === 'signup' ? 'Min. 8 characters' : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'} required />
+                      placeholder={mode === 'signup' ? t('passwordPlaceholder') : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'} required />
                   </div>
                 )}
 
@@ -165,12 +167,12 @@ export default function AuthPage() {
                 )}
 
                 <button type="submit" disabled={loading} className="btn-grad w-full py-3 text-sm">
-                  {loading ? '\u2026' : mode === 'login' ? 'Sign in \u2192' : mode === 'signup' ? 'Create account \u2192' : 'Send reset link \u2192'}
+                  {loading ? '\u2026' : mode === 'login' ? `${t('signIn')} \u2192` : mode === 'signup' ? `${t('createAccount')} \u2192` : `${t('sendResetLink')} \u2192`}
                 </button>
 
                 {mode === 'forgot' && (
                   <button type="button" onClick={() => { setMode('login'); reset() }}
-                    className="w-full text-center text-xs text-muted mt-3">\u2190 Back to sign in</button>
+                    className="w-full text-center text-xs text-muted mt-3">\u2190 {t('backToSignIn')}</button>
                 )}
               </form>
 
@@ -178,7 +180,7 @@ export default function AuthPage() {
                 <>
                   <div className="flex items-center gap-3 my-5">
                     <div className="flex-1 h-px" style={{ background: 'var(--line)' }} />
-                    <span className="text-xs text-muted font-mono">or</span>
+                    <span className="text-xs text-muted font-mono">{t('orContinueWith')}</span>
                     <div className="flex-1 h-px" style={{ background: 'var(--line)' }} />
                   </div>
 
@@ -190,17 +192,17 @@ export default function AuthPage() {
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                       </svg>
-                      Continue with Google
+                      {t('continueWithGoogle')}
                     </button>
 
                     <button onClick={() => handleOAuth('facebook')} className="btn-ghost w-full py-3 text-sm flex items-center justify-center gap-2">
                       <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12c0-6.63-5.37-12-12-12S0 5.37 0 12c0 5.99 4.39 10.95 10.13 11.85v-8.38H7.08V12h3.05V9.36c0-3.01 1.79-4.67 4.53-4.67 1.31 0 2.69.23 2.69.23v2.96h-1.52c-1.49 0-1.96.93-1.96 1.87V12h3.33l-.53 3.47h-2.8v8.38C19.61 22.95 24 17.99 24 12z"/></svg>
-                      Continue with Facebook
+                      {t('continueWithFacebook')}
                     </button>
 
                     <button onClick={() => handleOAuth('linkedin_oidc')} className="btn-ghost w-full py-3 text-sm flex items-center justify-center gap-2">
                       <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#0A66C2" d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/></svg>
-                      Continue with LinkedIn
+                      {t('continueWithLinkedIn')}
                     </button>
                   </div>
                 </>
@@ -209,7 +211,7 @@ export default function AuthPage() {
           )}
         </div>
 
-        <p className="text-center text-xs text-muted mt-6">Teach what you know. Learn what you need.</p>
+        <p className="text-center text-xs text-muted mt-6">{t('tagline')}</p>
       </div>
     </div>
   )

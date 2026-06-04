@@ -55,7 +55,8 @@
     "successSignup": "Account created! Check your email for a confirmation link, then sign in.",
     "successReset": "Password reset link sent — check your inbox.",
     "successResend": "Confirmation email re-sent — check your inbox (and spam).",
-    "signInNow": "Sign in now"
+    "signInNow": "Sign in now",
+    "errOAuth": "Couldn't connect to {provider}. {message}"
   },
   "onboarding": {
     "step1Label": "The Skill Mirror · Step 1",

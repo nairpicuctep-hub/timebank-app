@@ -55,7 +55,8 @@
     "successSignup": "Cont creat! Verifică e-mailul pentru linkul de confirmare, apoi autentifică-te.",
     "successReset": "Link de resetare trimis — verifică-ți inboxul.",
     "successResend": "E-mail de confirmare retrimis — verifică-ți inboxul (și spamul).",
-    "signInNow": "Autentifică-te acum"
+    "signInNow": "Autentifică-te acum",
+    "errOAuth": "Conectarea la {provider} a eșuat. {message}"
   },
   "onboarding": {
     "step1Label": "Oglinda Abilităților · Pasul 1",

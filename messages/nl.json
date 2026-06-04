@@ -55,7 +55,8 @@
     "successSignup": "Account aangemaakt! Controleer je e-mail voor de bevestigingslink en log daarna in.",
     "successReset": "Herstellink verstuurd — controleer je inbox.",
     "successResend": "Bevestigingsmail opnieuw verstuurd — controleer je inbox (en spam).",
-    "signInNow": "Nu inloggen"
+    "signInNow": "Nu inloggen",
+    "errOAuth": "Kon geen verbinding maken met {provider}. {message}"
   },
   "onboarding": {
     "step1Label": "De Vaardighedenspiegel · Stap 1",

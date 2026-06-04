@@ -55,7 +55,8 @@
     "successSignup": "Compte créé ! Vérifiez votre e-mail pour le lien de confirmation, puis connectez-vous.",
     "successReset": "Lien de réinitialisation envoyé — vérifiez votre boîte de réception.",
     "successResend": "E-mail de confirmation renvoyé — vérifiez votre boîte de réception (et les spams).",
-    "signInNow": "Se connecter maintenant"
+    "signInNow": "Se connecter maintenant",
+    "errOAuth": "Impossible de se connecter à {provider}. {message}"
   },
   "onboarding": {
     "step1Label": "Le Miroir des Compétences · Étape 1",
