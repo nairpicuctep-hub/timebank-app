@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import CookieConsent from '@/components/CookieConsent'
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
 
 export const metadata: Metadata = {
   title: 'TimeBank Academy',
@@ -15,12 +17,15 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const messages = await getMessages()
   return (
     <html lang="en">
       <body className="relative z-10">
-        {children}
-        <CookieConsent />
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          <CookieConsent />
+        </NextIntlClientProvider>
       </body>
     </html>
   )
