@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import SkillPicker from '@/components/SkillPicker'
+import BottomNav from '@/components/layout/BottomNav'
 
 /* -------------------------------------------------------------------------
    Onboarding v3 — dynamic skills + Phase A data foundation.
@@ -298,6 +299,8 @@ export default function OnboardingPage() {
           <button onClick={() => router.push('/home?welcome=1')} className="btn-grad w-full py-4 text-sm rise-3" style={{ maxWidth: 320 }}>Explore TimeBank →</button>
         </div>
       )}
+
+      <BottomNav active="mirror" />
 
       {/* BOTTOM CTA */}
       {step !== 'welcome' && (

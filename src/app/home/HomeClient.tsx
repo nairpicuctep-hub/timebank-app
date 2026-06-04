@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import BottomNav from '@/components/layout/BottomNav'
 import MastersStrip from '@/components/MastersStrip'
+import Coachmark from '@/components/Coachmark'
 
 /* -------------------------------------------------------------------------
    HomeClient — light cream + Bricolage. Two states baked in:
@@ -67,7 +68,7 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
                 🔥 {streak}
               </div>
             )}
-            <Link href="/profile">
+            <Link href="/profile" id="tour-profile">
               <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden"
                 style={{ background: profile?.avatar_url ? 'transparent' : 'var(--grad)', boxShadow: '0 0 0 2px rgba(249,115,22,0.2)' }}>
                 {profile?.avatar_url
@@ -82,7 +83,7 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
       <div className="px-5 pt-4 flex flex-col gap-4">
 
         {/* TC BALANCE HERO */}
-        <div className="grad-card rise p-5">
+        <div id="tour-balance" className="grad-card rise p-5">
           <div className="blob blob-1" /><div className="blob blob-2" />
           <div className="flex items-center gap-2 text-[13px] font-medium relative" style={{ opacity: 0.95 }}>
             ◎ Time Credits
@@ -115,7 +116,7 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
         </div>
 
         {/* XP STRIP */}
-        <div className="glass rise-1 p-4">
+        <div id="tour-level" className="glass rise-1 p-4">
           <div className="flex justify-between items-center">
             <div>
               <div className="text-xs text-muted font-medium">Current level</div>
@@ -283,6 +284,11 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
         )}
       </div>
 
+      <Coachmark steps={[
+        { target: 'tour-balance', title: 'Your Time Credits', body: 'Earn 1 TC by teaching an hour, spend 1 to learn. This is your balance.' },
+        { target: 'tour-level',   title: 'Level up',          body: 'Teach, learn, keep streaks — climb from Time Seed to Legend.' },
+        { target: 'tour-profile', title: 'Your profile',      body: 'Skills, badges and settings live here. Finish your profile to get matched.' },
+      ]} />
       <BottomNav active="home" />
     </div>
   )

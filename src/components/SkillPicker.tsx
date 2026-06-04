@@ -71,6 +71,7 @@ export default function SkillPicker({
     } else {
       onChange([...selected, skill.slug])
       setChosen(prev => prev.find(s => s.slug === skill.slug) ? prev : [...prev, skill])
+      setQuery(''); setResults([])
     }
   }
 
