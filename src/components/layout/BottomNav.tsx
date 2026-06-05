@@ -1,19 +1,21 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 /* Light BottomNav — warm glass bar, active tab in a gradient pill.
    Routes kept identical to the existing app so no links break. */
 
 const NAV = [
-  { href: '/home',       key: 'home',    icon: '⌂', label: 'Home'    },
-  { href: '/session',    key: 'session', icon: '◎', label: 'Explore' },
-  { href: '/onboarding', key: 'mirror',  icon: '✦', label: 'Mirror'  },
-  { href: '/wallet',     key: 'wallet',  icon: '◈', label: 'Credits' },
-  { href: '/profile',    key: 'profile', icon: '○', label: 'Profile' },
+  { href: '/home',       key: 'home',    icon: '⌂', tkey: 'home'    },
+  { href: '/session',    key: 'session', icon: '◎', tkey: 'explore' },
+  { href: '/onboarding', key: 'mirror',  icon: '✦', tkey: 'mirror'  },
+  { href: '/wallet',     key: 'wallet',  icon: '◈', tkey: 'credits' },
+  { href: '/profile',    key: 'profile', icon: '○', tkey: 'profile' },
 ]
 
 export default function BottomNav({ active }: { active: string }) {
+  const t = useTranslations('nav')
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-3 pt-3 pb-6"
       style={{
@@ -22,7 +24,7 @@ export default function BottomNav({ active }: { active: string }) {
         WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid var(--line-2)',
       }}>
-      {NAV.map(({ href, key, icon, label }) => {
+      {NAV.map(({ href, key, icon, tkey }) => {
         const isActive = active === key
         return (
           <Link key={href} href={href}>
@@ -32,7 +34,7 @@ export default function BottomNav({ active }: { active: string }) {
                 : {}}>
               <span style={{ fontSize: 20, lineHeight: 1, color: isActive ? '#fff' : 'var(--faint)' }}>{icon}</span>
               <span className="font-semibold uppercase tracking-wider"
-                style={{ fontSize: 9, color: isActive ? '#fff' : 'var(--faint)' }}>{label}</span>
+                style={{ fontSize: 9, color: isActive ? '#fff' : 'var(--faint)' }}>{t(tkey)}</span>
             </div>
           </Link>
         )
