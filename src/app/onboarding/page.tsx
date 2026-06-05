@@ -1,10 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import SkillPicker from '@/components/SkillPicker'
 import BottomNav from '@/components/layout/BottomNav'
+
+// rich-text chunk renderers shared across steps
+const grad = (chunks: ReactNode) => <span className="grad-text">{chunks}</span>
+const bold = (chunks: ReactNode) => <b className="text-ink">{chunks}</b>
 
 /* -------------------------------------------------------------------------
    Onboarding v3 — dynamic skills + Phase A data foundation.
@@ -16,10 +21,11 @@ import BottomNav from '@/components/layout/BottomNav'
      lawful gate that feeds the aggregate skill-graph asset.
    ------------------------------------------------------------------------- */
 
+// mirror questions reference catalog keys (q + placeholder) rather than literals
 const MIRROR_QS = [
-  { key: 'topic',       q: 'What could you talk about for an hour without notes?', ph: 'e.g. how I learned to cook proper risotto' },
-  { key: 'friends_ask', q: 'What do friends always ask you for help with?',         ph: 'e.g. fixing their CV, guitar chords…' },
-  { key: 'flow',        q: 'What were you doing last time you lost track of time?',  ph: 'e.g. editing photos, debugging code' },
+  { key: 'topic',       q: 'mirrorQ1', ph: 'mirrorQ1Ph' },
+  { key: 'friends_ask', q: 'mirrorQ2', ph: 'mirrorQ2Ph' },
+  { key: 'flow',        q: 'mirrorQ3', ph: 'mirrorQ3Ph' },
 ]
 
 const LANGS = [
@@ -29,11 +35,19 @@ const LANGS = [
   { code: 'it', label: 'Italiano' }, { code: 'pt', label: 'Português' },
 ]
 const AGE_BANDS = ['<18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+']
+const GENDERS = [
+  { val: 'female',     key: 'genderFemale' },
+  { val: 'male',       key: 'genderMale' },
+  { val: 'non-binary', key: 'genderNonBinary' },
+  { val: 'prefer-not', key: 'genderPreferNot' },
+] as const
 
 type Step = 'mirror' | 'learn' | 'levels' | 'about' | 'welcome'
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const t = useTranslations('onboarding')
+  const tc = useTranslations('common')
   const [step, setStep] = useState<Step>('mirror')
 
   const [mirror, setMirror] = useState<Record<string, string>>({})
@@ -127,30 +141,30 @@ export default function OnboardingPage() {
           </div>
           {step === 'mirror' && (
             <div className="rise">
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted mb-2">The Skill Mirror · Step 1</div>
-              <h1 className="font-display font-semibold text-[28px] leading-[1.1] text-ink">Everyone&apos;s an expert<br/>in <span className="grad-text">something.</span></h1>
-              <p className="text-sm text-muted mt-2">Answer a few questions, then add what you can teach.</p>
+              <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted mb-2">{t('step1Label')}</div>
+              <h1 className="font-display font-semibold text-[28px] leading-[1.1] text-ink">{t.rich('step1Title', { grad })}</h1>
+              <p className="text-sm text-muted mt-2">{t('step1Subtitle')}</p>
             </div>
           )}
           {step === 'learn' && (
             <div className="rise">
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted mb-2">Step 2</div>
-              <h1 className="font-display font-semibold text-[28px] leading-[1.1] text-ink">What do you want to <span className="grad-text">learn?</span></h1>
-              <p className="text-sm text-muted mt-2">Search anything. Can&apos;t find it? Add it.</p>
+              <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted mb-2">{t('step2Label')}</div>
+              <h1 className="font-display font-semibold text-[28px] leading-[1.1] text-ink">{t.rich('learnTitle', { grad })}</h1>
+              <p className="text-sm text-muted mt-2">{t('learnSubtitle')}</p>
             </div>
           )}
           {step === 'levels' && (
             <div className="rise">
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted mb-2">Step 3</div>
-              <h1 className="font-display font-semibold text-[28px] leading-[1.1] text-ink">How good are you, <span className="grad-text">really?</span></h1>
-              <p className="text-sm text-muted mt-2">Helps us match you with the right learners.</p>
+              <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted mb-2">{t('step3Label')}</div>
+              <h1 className="font-display font-semibold text-[28px] leading-[1.1] text-ink">{t.rich('proficiencyTitle', { grad })}</h1>
+              <p className="text-sm text-muted mt-2">{t('proficiencySubtitle')}</p>
             </div>
           )}
           {step === 'about' && (
             <div className="rise">
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted mb-2">Step 4 · Almost there</div>
-              <h1 className="font-display font-semibold text-[28px] leading-[1.1] text-ink">A little <span className="grad-text">about you.</span></h1>
-              <p className="text-sm text-muted mt-2">Helps us match you locally. Only your city &amp; language are used for matching — the rest is optional.</p>
+              <div className="font-mono text-xs uppercase tracking-[0.18em] text-muted mb-2">{t('step4Label')}</div>
+              <h1 className="font-display font-semibold text-[28px] leading-[1.1] text-ink">{t.rich('aboutTitle', { grad })}</h1>
+              <p className="text-sm text-muted mt-2">{t('aboutSubtitle')}</p>
             </div>
           )}
         </div>
@@ -162,14 +176,14 @@ export default function OnboardingPage() {
           <div className="flex flex-col gap-3">
             {MIRROR_QS.map((m, i) => (
               <div key={m.key} className={`glass p-4 rise-${i + 1}`}>
-                <label className="block text-sm font-semibold text-ink mb-2">{m.q}</label>
-                <textarea rows={2} value={mirror[m.key] || ''} placeholder={m.ph}
+                <label className="block text-sm font-semibold text-ink mb-2">{t(m.q)}</label>
+                <textarea rows={2} value={mirror[m.key] || ''} placeholder={t(m.ph)}
                   onChange={e => setMirror(p => ({ ...p, [m.key]: e.target.value }))} style={{ resize: 'none' }} />
               </div>
             ))}
             <div className="glass p-4 rise-4">
-              <div className="text-sm font-semibold text-ink mb-1">✨ What can you teach?</div>
-              <p className="text-xs text-muted mb-3">Search or add anything — a language, a craft, a niche skill.</p>
+              <div className="text-sm font-semibold text-ink mb-1">✨ {t('teachQuestion')}</div>
+              <p className="text-xs text-muted mb-3">{t('teachSearchHint')}</p>
               <SkillPicker selected={teachSkills} onChange={setTeachSkills} language={primaryLang} accent="grad" />
             </div>
           </div>
@@ -190,7 +204,7 @@ export default function OnboardingPage() {
         <div className="flex-1 overflow-y-auto px-5 pb-4 no-scrollbar">
           {teachSkills.length === 0 ? (
             <div className="glass p-6 text-center">
-              <p className="text-sm text-muted">No teaching skills — tap continue. You can add some anytime.</p>
+              <p className="text-sm text-muted">{t('noTeachSkills')}</p>
             </div>
           ) : (
             <TeachLevels teachSkills={teachSkills} levels={levels} setLevels={setLevels} />
@@ -204,17 +218,17 @@ export default function OnboardingPage() {
           <div className="flex flex-col gap-3">
             {/* location */}
             <div className="glass p-4">
-              <label className="block text-sm font-semibold text-ink mb-2">Where are you based?</label>
+              <label className="block text-sm font-semibold text-ink mb-2">{t('locationLabel')}</label>
               <div className="flex gap-2">
-                <input value={city} onChange={e => setCity(e.target.value)} placeholder="City (e.g. Antwerp)" style={{ flex: 2 }} />
+                <input value={city} onChange={e => setCity(e.target.value)} placeholder={t('cityPlaceholder')} style={{ flex: 2 }} />
                 <input value={country} onChange={e => setCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder="BE" style={{ flex: 1, textAlign: 'center' }} maxLength={2} />
               </div>
-              <p className="text-[11px] text-muted mt-2">Used to match you with people nearby. City-level only — never your exact location.</p>
+              <p className="text-[11px] text-muted mt-2">{t('cityHint')}</p>
             </div>
 
             {/* languages */}
             <div className="glass p-4">
-              <label className="block text-sm font-semibold text-ink mb-2">Languages you speak</label>
+              <label className="block text-sm font-semibold text-ink mb-2">{t('languagesLabel')}</label>
               <div className="flex flex-wrap gap-2">
                 {LANGS.map(l => {
                   const on = langs.includes(l.code)
@@ -228,18 +242,18 @@ export default function OnboardingPage() {
                   )
                 })}
               </div>
-              <p className="text-[11px] text-muted mt-2">First selected is your main language. You can teach &amp; learn across all of them.</p>
+              <p className="text-[11px] text-muted mt-2">{t('languagesHint')}</p>
             </div>
 
             {/* optional demographics */}
             <div className="glass p-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold text-ink">A bit more (optional)</label>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-faint">Optional</span>
+                <label className="text-sm font-semibold text-ink">{t('optionalLabel')}</label>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-faint">{t('optionalBadge')}</span>
               </div>
-              <p className="text-[11px] text-muted mb-3">Helps us show our community impact to partners who fund free learning. Skip if you prefer.</p>
+              <p className="text-[11px] text-muted mb-3">{t('optionalHint')}</p>
               <div className="mb-3">
-                <div className="text-xs text-muted mb-1.5">Age range</div>
+                <div className="text-xs text-muted mb-1.5">{t('ageLabel')}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {AGE_BANDS.map(a => (
                     <button key={a} onClick={() => setAgeBand(ageBand === a ? '' : a)}
@@ -251,13 +265,13 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted mb-1.5">Gender</div>
+                <div className="text-xs text-muted mb-1.5">{t('genderLabel')}</div>
                 <div className="flex flex-wrap gap-1.5">
-                  {['female', 'male', 'non-binary', 'prefer-not'].map(g => (
-                    <button key={g} onClick={() => setGender(gender === g ? '' : g)}
-                      className="px-2.5 py-1 rounded-pill text-xs capitalize transition-all"
-                      style={gender === g ? { background: 'var(--grad)', color: '#fff' } : { background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
-                      {g === 'prefer-not' ? 'Prefer not to say' : g}
+                  {GENDERS.map(({ val, key }) => (
+                    <button key={val} onClick={() => setGender(gender === val ? '' : val)}
+                      className="px-2.5 py-1 rounded-pill text-xs transition-all"
+                      style={gender === val ? { background: 'var(--grad)', color: '#fff' } : { background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
+                      {t(key)}
                     </button>
                   ))}
                 </div>
@@ -272,9 +286,9 @@ export default function OnboardingPage() {
                   {researchOptIn && <span style={{ color: '#fff', fontSize: 13 }}>✓</span>}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-ink">Contribute to community insights</div>
+                  <div className="text-sm font-medium text-ink">{t('consentLabel')}</div>
                   <div className="text-[11px] text-muted mt-0.5">
-                    Let us include your activity in <b>anonymized, aggregated</b> insights about how skills move through communities. We never sell your personal data. You can turn this off anytime.
+                    {t.rich('consentBody', { b: (c: ReactNode) => <b>{c}</b> })}
                   </div>
                 </div>
               </button>
@@ -293,10 +307,10 @@ export default function OnboardingPage() {
               <div className="font-mono" style={{ fontSize: 11, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.9)' }}>TC</div>
             </div>
           </div>
-          <h1 className="font-display font-semibold text-[30px] leading-tight text-ink mb-2 rise-1">Welcome, <span className="grad-text">Time Seed.</span></h1>
-          <p className="text-sm text-muted mb-1 rise-2">You&apos;ve got <b className="text-ink">3 Time Credits</b> to start learning.</p>
-          <p className="text-sm text-muted mb-8 rise-2">Teach an hour, earn one back. Time is your currency.</p>
-          <button onClick={() => router.push('/home?welcome=1')} className="btn-grad w-full py-4 text-sm rise-3" style={{ maxWidth: 320 }}>Explore TimeBank →</button>
+          <h1 className="font-display font-semibold text-[30px] leading-tight text-ink mb-2 rise-1">{t.rich('welcomeTitle', { grad })}</h1>
+          <p className="text-sm text-muted mb-1 rise-2">{t.rich('welcomeBalance', { amount: 3, b: bold })}</p>
+          <p className="text-sm text-muted mb-8 rise-2">{t('welcomeBody')}</p>
+          <button onClick={() => router.push('/home?welcome=1')} className="btn-grad w-full py-4 text-sm rise-3" style={{ maxWidth: 320 }}>{t('exploreCta')} →</button>
         </div>
       )}
 
@@ -307,26 +321,26 @@ export default function OnboardingPage() {
         <div className="px-5 py-4 flex-shrink-0" style={{ borderTop: '1px solid var(--line-2)' }}>
           {step === 'mirror' && (
             <button onClick={() => setStep('learn')} disabled={teachSkills.length === 0} className="btn-grad w-full py-3.5 text-sm">
-              {teachSkills.length === 0 ? 'Add at least one skill to teach' : `Continue · ${teachSkills.length} to teach →`}
+              {teachSkills.length === 0 ? t('ctaAddSkill') : `${t('ctaContinueTeach', { count: teachSkills.length })} →`}
             </button>
           )}
           {step === 'learn' && (
             <button onClick={() => setStep('levels')} disabled={learnSkills.length === 0} className="btn-grad w-full py-3.5 text-sm">
-              Continue · {learnSkills.length} to learn →
+              {t('ctaContinueLearn', { count: learnSkills.length })} →
             </button>
           )}
           {step === 'levels' && (
             <div className="flex flex-col gap-2">
-              <button onClick={() => setStep('about')} className="btn-grad w-full py-3.5 text-sm">Continue →</button>
-              <button onClick={() => setStep('learn')} className="w-full py-2.5 text-xs text-muted">← Back</button>
+              <button onClick={() => setStep('about')} className="btn-grad w-full py-3.5 text-sm">{tc('continue')} →</button>
+              <button onClick={() => setStep('learn')} className="w-full py-2.5 text-xs text-muted">← {tc('back')}</button>
             </div>
           )}
           {step === 'about' && (
             <div className="flex flex-col gap-2">
               <button onClick={finish} disabled={loading} className="btn-grad w-full py-3.5 text-sm">
-                {loading ? 'Setting up…' : 'Finish ✦'}
+                {loading ? t('settingUp') : `${t('finish')} ✦`}
               </button>
-              <button onClick={() => setStep('levels')} className="w-full py-2.5 text-xs text-muted">← Back</button>
+              <button onClick={() => setStep('levels')} className="w-full py-2.5 text-xs text-muted">← {tc('back')}</button>
             </div>
           )}
         </div>
@@ -338,6 +352,7 @@ export default function OnboardingPage() {
 function TeachLevels({ teachSkills, levels, setLevels }: {
   teachSkills: string[]; levels: Record<string, number>; setLevels: (v: any) => void
 }) {
+  const t = useTranslations('onboarding')
   const [names, setNames] = useState<Record<string, { name: string; icon: string }>>({})
   useState(() => {
     const supabase = createClient()
@@ -345,7 +360,7 @@ function TeachLevels({ teachSkills, levels, setLevels }: {
       setNames(Object.fromEntries((data || []).map((s: any) => [s.slug, { name: s.name, icon: s.icon }])))
     })
   })
-  const LV = ['Beginner', 'Intermediate', 'Advanced', 'Expert']
+  const LV = [t('profBeginner'), t('profIntermediate'), t('profAdvanced'), t('profExpert')]
   return (
     <div className="flex flex-col gap-3">
       {teachSkills.map(slug => {
