@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 import Link from 'next/link'
 
 /* -------------------------------------------------------------------------
@@ -14,28 +16,32 @@ import Link from 'next/link'
      • badge codes match the seeded `badges` table
    ------------------------------------------------------------------------- */
 
-const LEVEL_NAMES = ['', 'Time Seed', 'Curious Learner', 'Active Exchanger', 'Mentor Spark', 'Knowledge Weaver', 'Community Pillar', 'TimeBank Legend']
 const LEVEL_ICONS = ['', '🌱', '📚', '⚡', '✨', '🧵', '🏛️', '🏆']
 const LEVEL_XP    = [0, 0, 100, 250, 500, 1000, 2000, 5000]
 
-// matches the seeded `badges` table (id = code)
+// matches the seeded `badges` table (id = code); display names come from the badges catalog
 const ALL_BADGES = [
-  { id: 'skill_mirror',        name: 'Skill Mirror',        icon: '🪞' },
-  { id: 'first_session',       name: 'First Session',       icon: '🎯' },
-  { id: '7_day_streak',        name: '7-Day Streak',        icon: '🔥' },
-  { id: '30_day_streak',       name: '30-Day Streak',       icon: '🌕' },
-  { id: 'top_rated',           name: 'Top Rated',           icon: '⭐' },
-  { id: '10_sessions',         name: '10 Sessions',         icon: '🔟' },
-  { id: '25_sessions',         name: '25 Sessions',         icon: '🏅' },
-  { id: 'multilingual',        name: 'Multilingual',        icon: '🌍' },
-  { id: 'early_adopter',       name: 'Early Adopter',       icon: '🌱' },
-  { id: 'group_host',          name: 'Group Host',          icon: '👥' },
-  { id: 'perfect_month',       name: 'Perfect Month',       icon: '📅' },
-  { id: 'community_connector', name: 'Community Connector', icon: '🤝' },
-  { id: 'timebank_legend',     name: 'TimeBank Legend',     icon: '🏆' },
+  { id: 'skill_mirror',        icon: '🪞' },
+  { id: 'first_session',       icon: '🎯' },
+  { id: '7_day_streak',        icon: '🔥' },
+  { id: '30_day_streak',       icon: '🌕' },
+  { id: 'top_rated',           icon: '⭐' },
+  { id: '10_sessions',         icon: '🔟' },
+  { id: '25_sessions',         icon: '🏅' },
+  { id: 'multilingual',        icon: '🌍' },
+  { id: 'early_adopter',       icon: '🌱' },
+  { id: 'group_host',          icon: '👥' },
+  { id: 'perfect_month',       icon: '📅' },
+  { id: 'community_connector', icon: '🤝' },
+  { id: 'timebank_legend',     icon: '🏆' },
 ]
 
 export default function ProfilePage() {
+  const t = useTranslations('profile')
+  const tc = useTranslations('common')
+  const tl = useTranslations('levels')
+  const tprof = useTranslations('proficiency')
+  const tbadge = useTranslations('badges')
   const [data, setData] = useState<any>(null)
   const [badges, setBadges] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,7 +92,7 @@ export default function ProfilePage() {
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', session.user.id)
       setData((prev: any) => ({ ...prev, profile: { ...prev.profile, avatar_url: `${publicUrl}?t=${Date.now()}` } }))
     } else {
-      alert('Upload failed: ' + error.message)
+      alert(t('uploadFailed', { message: error.message }))
     }
     setUploading(false)
   }
@@ -99,11 +105,13 @@ export default function ProfilePage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm font-mono text-muted">Loading…</p>
+      <p className="text-sm font-mono text-muted">{tc('loading')}</p>
     </div>
   )
 
   const { profile, skills, balance } = data
+  const levelName = (lvl: number) => tl(String(Math.min(Math.max(lvl, 1), 7)))
+  const PROF = ['', tprof('beginner'), tprof('intermediate'), tprof('advanced'), tprof('expert')]
   const firstName = profile?.full_name?.split(' ')[0] || 'You'
   const level = profile?.level || 1
   const xp = profile?.xp || 0
@@ -138,19 +146,19 @@ export default function ProfilePage() {
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
         </div>
 
-        <div className="font-display font-semibold text-2xl text-ink">{profile?.full_name || 'Your Name'}</div>
-        <div className="text-xs font-mono text-muted mt-0.5">{profile?.location || 'Antwerp'}</div>
+        <div className="font-display font-semibold text-2xl text-ink">{profile?.full_name || t('yourName')}</div>
+        <div className="text-xs font-mono text-muted mt-0.5">{profile?.location || '—'}</div>
 
         <div className="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 rounded-pill text-xs font-medium"
           style={{ background: 'var(--tc-bg)', border: '1px solid var(--tc-bd)', color: 'var(--tc-tx)' }}>
-          {LEVEL_ICONS[level]} Level {level} · {LEVEL_NAMES[level]}
+          {LEVEL_ICONS[level]} {t('level', { level })} · {levelName(level)}
         </div>
 
         {/* xp bar */}
         <div className="mt-4 mx-6">
           <div className="flex justify-between text-[10px] font-mono mb-1 text-muted">
             <span>{xp} XP</span>
-            <span>{level < 7 ? `${nextXP} XP` : 'Max level'}</span>
+            <span>{level < 7 ? `${nextXP} XP` : t('maxLevel')}</span>
           </div>
           <div className="h-2 rounded-pill" style={{ background: 'rgba(120,70,40,0.08)' }}>
             <div className="h-full rounded-pill" style={{ width: `${xpPct}%`, background: 'var(--grad)' }} />
@@ -160,10 +168,10 @@ export default function ProfilePage() {
         {/* stats */}
         <div className="flex justify-center gap-7 mt-5">
           {[
-            { val: balance.available_balance, label: 'TC', grad: true },
-            { val: profile?.sessions_taught || 0, label: 'Taught' },
-            { val: streak > 0 ? `${streak}🔥` : '0', label: 'Streak' },
-            { val: rating > 0 ? rating.toFixed(1) : '—', label: 'Rating' },
+            { val: balance.available_balance, label: tc('tc'), grad: true },
+            { val: profile?.sessions_taught || 0, label: t('taught') },
+            { val: streak > 0 ? `${streak}🔥` : '0', label: t('streak') },
+            { val: rating > 0 ? rating.toFixed(1) : '—', label: t('rating') },
           ].map(s => (
             <div key={s.label} className="text-center">
               <div className={`font-display font-bold text-xl ${s.grad ? 'grad-text' : 'text-ink'}`}>{s.val}</div>
@@ -178,19 +186,19 @@ export default function ProfilePage() {
         {/* skills */}
         <div className="glass p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-display font-semibold text-base text-ink">Skills</h3>
-            <Link href="/onboarding"><span className="text-xs font-medium grad-text">Edit →</span></Link>
+            <h3 className="font-display font-semibold text-base text-ink">{t('skills')}</h3>
+            <Link href="/onboarding"><span className="text-xs font-medium grad-text">{tc('edit')} →</span></Link>
           </div>
           {skills.length === 0 ? (
             <div>
-              <p className="text-xs text-muted mb-2">No skills yet</p>
-              <Link href="/onboarding"><span className="text-xs font-medium grad-text">Add skills →</span></Link>
+              <p className="text-xs text-muted mb-2">{t('noSkills')}</p>
+              <Link href="/onboarding"><span className="text-xs font-medium grad-text">{t('addSkills')} →</span></Link>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
               {teachSkills.length > 0 && (
                 <div>
-                  <div className="text-[9px] font-mono uppercase tracking-widest mb-2 text-faint">I teach</div>
+                  <div className="text-[9px] font-mono uppercase tracking-widest mb-2 text-faint">{t('iTeach')}</div>
                   <div className="flex flex-col gap-2">
                     {teachSkills.map((s: any) => (
                       <div key={s.id} className="flex items-center gap-3">
@@ -199,7 +207,7 @@ export default function ProfilePage() {
                           <div className="h-full rounded-pill" style={{ width: `${(s.proficiency || 2) * 25}%`, background: 'var(--grad)' }} />
                         </div>
                         <div className="text-[9px] font-mono w-16 text-right text-muted">
-                          {['', 'Beginner', 'Intermediate', 'Advanced', 'Expert'][s.proficiency] || 'Int.'}
+                          {PROF[s.proficiency] || tprof('intShort')}
                         </div>
                       </div>
                     ))}
@@ -208,7 +216,7 @@ export default function ProfilePage() {
               )}
               {learnSkills.length > 0 && (
                 <div>
-                  <div className="text-[9px] font-mono uppercase tracking-widest mb-2 text-faint">I learn</div>
+                  <div className="text-[9px] font-mono uppercase tracking-widest mb-2 text-faint">{t('iLearn')}</div>
                   <div className="flex flex-wrap gap-2">
                     {learnSkills.map((s: any) => (
                       <span key={s.id} className="text-xs px-2.5 py-1 rounded-pill"
@@ -226,18 +234,19 @@ export default function ProfilePage() {
         {/* badges */}
         <div className="glass p-4">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-display font-semibold text-base text-ink">Badges</h3>
+            <h3 className="font-display font-semibold text-base text-ink">{t('badges')}</h3>
             <span className="text-[10px] font-mono text-faint">{earnedIds.size}/{ALL_BADGES.length}</span>
           </div>
           <div className="grid grid-cols-5 gap-2">
             {ALL_BADGES.map(b => {
               const earned = earnedIds.has(b.id)
+              const name = tbadge(b.id)
               return (
-                <div key={b.id} title={b.name} className="flex flex-col items-center gap-1 p-2 rounded-2xl"
+                <div key={b.id} title={name} className="flex flex-col items-center gap-1 p-2 rounded-2xl"
                   style={{ background: earned ? 'var(--tc-bg)' : 'transparent', opacity: earned ? 1 : 0.35 }}>
                   <span className="text-xl" style={{ filter: earned ? 'none' : 'grayscale(1)' }}>{b.icon}</span>
                   <span className="text-[8px] text-center leading-tight font-mono" style={{ color: earned ? 'var(--text)' : 'var(--faint)' }}>
-                    {b.name}
+                    {name}
                   </span>
                 </div>
               )
@@ -249,11 +258,20 @@ export default function ProfilePage() {
         <Link href="/availability" className="glass p-4 flex items-center gap-3">
           <span className="text-xl">📅</span>
           <div className="flex-1">
-            <div className="text-sm font-semibold text-ink">Manage availability</div>
-            <div className="text-xs text-muted">Set when you can teach</div>
+            <div className="text-sm font-semibold text-ink">{t('manageAvailability')}</div>
+            <div className="text-xs text-muted">{t('manageAvailabilityHint')}</div>
           </div>
           <span className="text-muted">→</span>
         </Link>
+
+        {/* language */}
+        <div className="glass p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">🌐</span>
+            <div className="text-sm font-semibold text-ink">{t('language')}</div>
+          </div>
+          <LanguageSwitcher compact />
+        </div>
 
         {/* tier + sign out */}
         <div className="glass p-4 flex items-center gap-3">
@@ -262,12 +280,12 @@ export default function ProfilePage() {
             {profile?.tier || 'free'}
           </span>
           <span className="text-xs text-muted flex-1">
-            {profile?.tier === 'premium' ? 'Premium — no balance cap' : 'Free — 20 TC balance cap'}
+            {profile?.tier === 'premium' ? t('premiumDesc') : t('freeDesc')}
           </span>
-          {profile?.tier !== 'premium' && <span className="text-xs font-medium grad-text">Upgrade →</span>}
+          {profile?.tier !== 'premium' && <span className="text-xs font-medium grad-text">{t('upgrade')} →</span>}
         </div>
 
-        <button onClick={signOut} className="btn-ghost w-full py-3 text-xs">Sign out</button>
+        <button onClick={signOut} className="btn-ghost w-full py-3 text-xs">{t('signOut')}</button>
       </div>
 
       <BottomNav active="profile" />
