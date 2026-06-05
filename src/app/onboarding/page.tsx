@@ -138,7 +138,9 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    // pb clears the fixed BottomNav (~72px) so the in-flow Continue CTA sits
+    // visibly above it instead of being hidden behind it.
+    <div className="min-h-screen flex flex-col" style={{ paddingBottom: 84 }}>
 
       {/* progress + headings */}
       {step !== 'welcome' && (
