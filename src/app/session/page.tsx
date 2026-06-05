@@ -125,9 +125,15 @@ export default function SessionPage() {
         <div className="flex gap-1 p-1 rounded-pill glass" style={{ borderRadius: 'var(--r-pill)' }}>
           {TABS.map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
-              className="flex-1 py-2 rounded-pill text-xs font-semibold transition-all"
+              className="relative flex-1 py-2 rounded-pill text-xs font-semibold transition-all"
               style={tab === key ? { background: 'var(--grad)', color: '#fff' } : { color: 'var(--muted)' }}>
               {label}
+              {key === 'pings' && pings.length > 0 && tab !== 'pings' && (
+                <span className="absolute" style={{
+                  top: 4, right: 8, width: 7, height: 7, borderRadius: 999,
+                  background: 'var(--rose, #D03878)',
+                }} />
+              )}
             </button>
           ))}
         </div>
