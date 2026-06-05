@@ -270,6 +270,16 @@
     "confirmCta": "Confirm & release TC",
     "footer": "Your TimeCredit releases once both of you confirm the session."
   },
+  "ping": {
+    "requests": "Requests",
+    "conversations": "Conversations",
+    "noConversations": "No conversations yet — accepted requests show up here.",
+    "sentWaiting": "Request sent — waiting for {name} to accept.",
+    "threadWith": "Chat with {name}",
+    "connected": "You're connected — say hi 👋",
+    "notFound": "Conversation not found",
+    "send": "Send"
+  },
   "tour": {
     "balanceTitle": "Your Time Credits",
     "balanceBody": "Earn 1 by teaching an hour, spend 1 to learn. This is your balance — start with a few on us.",

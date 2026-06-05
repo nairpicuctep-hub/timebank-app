@@ -51,32 +51,60 @@ export default function SessionPage() {
   const tc = useTranslations('common')
   const tnav = useTranslations('nav')
   const tcat = useTranslations('categories')
+  const tping = useTranslations('ping')
   const [tab, setTab] = useState<'browse' | 'sessions' | 'pings'>('browse')
   const [teachers, setTeachers] = useState<any[]>([])
   const [mySessions, setMySessions] = useState<any[]>([])
-  const [pings, setPings] = useState<any[]>([])
+  const [pings, setPings] = useState<any[]>([])       // incoming pending requests
+  const [sentOut, setSentOut] = useState<any[]>([])   // outgoing pending requests
+  const [convos, setConvos] = useState<any[]>([])     // accepted conversations (either direction)
+  const [uid, setUid] = useState('')
   const [cat, setCat] = useState('All')
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+
+  async function loadPings(myId: string) {
+    const supabase = createClient()
+    const [inc, out, acc] = await Promise.all([
+      supabase.from('session_pings')
+        .select('*, from:from_user(id, full_name, avatar_url), skill:skill_id(name, icon)')
+        .eq('to_user', myId).eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('session_pings')
+        .select('*, to:to_user(id, full_name), skill:skill_id(name, icon)')
+        .eq('from_user', myId).eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('session_pings')
+        .select('*, from:from_user(id, full_name, avatar_url), to:to_user(id, full_name, avatar_url), skill:skill_id(name, icon)')
+        .eq('status', 'accepted').or(`from_user.eq.${myId},to_user.eq.${myId}`)
+        .order('created_at', { ascending: false }),
+    ])
+    setPings(inc.data || [])
+    setSentOut(out.data || [])
+    setConvos(acc.data || [])
+  }
+
+  async function respondPing(id: string, accept: boolean) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc('respond_to_ping', { p_ping_id: id, p_accept: accept })
+    if (error) { alert(error.message); return }
+    await loadPings(uid)
+  }
 
   useEffect(() => {
     const supabase = createClient()
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth'); return }
-      const uid = session.user.id
+      const myId = session.user.id
+      setUid(myId)
 
-      const [teachersRes, sessionsRes, pingsRes] = await Promise.all([
+      const [teachersRes, sessionsRes] = await Promise.all([
         supabase.from('user_skills')
           .select('proficiency, skills(name, icon, category), profiles!inner(id, full_name, avatar_url, rating_as_teacher, sessions_taught, location)')
-          .eq('role', 'teacher').neq('user_id', uid).limit(40),
+          .eq('role', 'teacher').neq('user_id', myId).limit(40),
         supabase.from('sessions')
           .select('*, skill:skill_id(name, icon), teacher:teacher_id(full_name), learner:learner_id(full_name)')
-          .or(`teacher_id.eq.${uid},learner_id.eq.${uid}`)
+          .or(`teacher_id.eq.${myId},learner_id.eq.${myId}`)
           .order('scheduled_at', { ascending: false }).limit(20),
-        supabase.from('session_pings')
-          .select('*, from:from_user(full_name), skill:skill_id(name, icon)')
-          .eq('to_user', uid).eq('status', 'pending'),
       ])
 
       const grouped = (teachersRes.data || []).reduce((acc: any, row: any) => {
@@ -89,7 +117,7 @@ export default function SessionPage() {
 
       setTeachers(Object.values(grouped))
       setMySessions(sessionsRes.data || [])
-      setPings(pingsRes.data || [])
+      await loadPings(myId)
       setLoading(false)
     }
     load()
@@ -234,27 +262,74 @@ export default function SessionPage() {
 
       {/* PINGS */}
       {tab === 'pings' && (
-        <div className="px-5 flex flex-col gap-3">
-          {pings.length === 0 ? (
+        <div className="px-5 flex flex-col gap-4">
+          {pings.length === 0 && sentOut.length === 0 && convos.length === 0 && (
             <div className="glass p-8 text-center">
               <p className="text-sm text-muted">{t('noPings')}</p>
             </div>
-          ) : pings.map(p => (
-            <div key={p.id} className="glass p-4">
-              <div className="text-sm text-ink mb-1">
-                {t.rich('pingWants', {
-                  name: p.from?.full_name || t('someone'),
-                  skill: `${p.skill?.icon || ''} ${p.skill?.name || t('aSkill')}`.trim(),
-                  b: bold,
-                })}
-              </div>
-              {p.message && <div className="text-xs text-muted mb-3">&ldquo;{p.message}&rdquo;</div>}
-              <div className="flex gap-2">
-                <button className="btn-grad flex-1 py-2.5 text-xs">{t('accept')}</button>
-                <button className="btn-ghost flex-1 py-2.5 text-xs">{t('decline')}</button>
-              </div>
+          )}
+
+          {/* incoming requests — must Accept before any thread opens */}
+          {pings.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-faint">{tping('requests')}</div>
+              {pings.map(p => (
+                <div key={p.id} className="glass p-4">
+                  <div className="text-sm text-ink mb-1">
+                    {t.rich('pingWants', {
+                      name: p.from?.full_name || t('someone'),
+                      skill: `${p.skill?.icon || ''} ${p.skill?.name || t('aSkill')}`.trim(),
+                      b: bold,
+                    })}
+                  </div>
+                  {p.message && <div className="text-xs text-muted mb-3">&ldquo;{p.message}&rdquo;</div>}
+                  <div className="flex gap-2">
+                    <button onClick={() => respondPing(p.id, true)} className="btn-grad flex-1 py-2.5 text-xs">{t('accept')}</button>
+                    <button onClick={() => respondPing(p.id, false)} className="btn-ghost flex-1 py-2.5 text-xs">{t('decline')}</button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/* accepted conversations — open the message thread */}
+          {convos.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-faint">{tping('conversations')}</div>
+              {convos.map(p => {
+                const other = p.from?.id === uid ? p.to : p.from
+                return (
+                  <Link href={`/ping/${p.id}`} key={p.id}>
+                    <div className="glass p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden flex-shrink-0"
+                        style={{ background: other?.avatar_url ? 'transparent' : 'var(--grad)' }}>
+                        {other?.avatar_url
+                          ? <img src={other.avatar_url} className="w-full h-full object-cover" alt="" />
+                          : (other?.full_name?.[0]?.toUpperCase() || '?')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-ink truncate">{other?.full_name || t('someone')}</div>
+                        <div className="text-xs text-muted truncate">{p.skill?.icon} {p.skill?.name || ''}</div>
+                      </div>
+                      <span className="text-muted">→</span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+
+          {/* outgoing requests still awaiting acceptance */}
+          {sentOut.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {sentOut.map(p => (
+                <div key={p.id} className="glass p-4">
+                  <div className="text-xs text-muted">{tping('sentWaiting', { name: p.to?.full_name || t('someone') })}</div>
+                  {p.message && <div className="text-xs text-ink mt-1">&ldquo;{p.message}&rdquo;</div>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

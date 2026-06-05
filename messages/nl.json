@@ -270,6 +270,16 @@
     "confirmCta": "Bevestig & geef TC vrij",
     "footer": "Je TimeCredit komt vrij zodra jullie beiden de sessie bevestigen."
   },
+  "ping": {
+    "requests": "Verzoeken",
+    "conversations": "Gesprekken",
+    "noConversations": "Nog geen gesprekken — geaccepteerde verzoeken verschijnen hier.",
+    "sentWaiting": "Verzoek verzonden — wachten tot {name} accepteert.",
+    "threadWith": "Chat met {name}",
+    "connected": "Jullie zijn verbonden — zeg hallo 👋",
+    "notFound": "Gesprek niet gevonden",
+    "send": "Versturen"
+  },
   "tour": {
     "balanceTitle": "Je Time Credits",
     "balanceBody": "Verdien er 1 door een uur les te geven, geef er 1 uit om te leren. Dit is je saldo — je krijgt er een paar van ons.",

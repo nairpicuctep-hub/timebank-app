@@ -270,6 +270,16 @@
     "confirmCta": "Confirmer et libérer le TC",
     "footer": "Votre TimeCredit est libéré une fois que vous confirmez tous les deux la session."
   },
+  "ping": {
+    "requests": "Demandes",
+    "conversations": "Conversations",
+    "noConversations": "Aucune conversation — les demandes acceptées apparaissent ici.",
+    "sentWaiting": "Demande envoyée — en attente de l'acceptation de {name}.",
+    "threadWith": "Discuter avec {name}",
+    "connected": "Vous êtes connectés — dites bonjour 👋",
+    "notFound": "Conversation introuvable",
+    "send": "Envoyer"
+  },
   "tour": {
     "balanceTitle": "Vos Time Credits",
     "balanceBody": "Gagnez-en 1 en enseignant une heure, dépensez-en 1 pour apprendre. Voici votre solde — quelques-uns offerts pour commencer.",

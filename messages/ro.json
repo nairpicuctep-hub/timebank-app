@@ -270,6 +270,16 @@
     "confirmCta": "Confirmă și eliberează TC",
     "footer": "TimeCredit-ul tău se eliberează după ce confirmați amândoi sesiunea."
   },
+  "ping": {
+    "requests": "Cereri",
+    "conversations": "Conversații",
+    "noConversations": "Încă nicio conversație — cererile acceptate apar aici.",
+    "sentWaiting": "Cerere trimisă — se așteaptă acceptarea de la {name}.",
+    "threadWith": "Discută cu {name}",
+    "connected": "Sunteți conectați — salută 👋",
+    "notFound": "Conversație negăsită",
+    "send": "Trimite"
+  },
   "tour": {
     "balanceTitle": "Time Credits-urile tale",
     "balanceBody": "Câștigi 1 predând o oră, cheltui 1 ca să înveți. Acesta e soldul tău — primești câteva de la noi.",
