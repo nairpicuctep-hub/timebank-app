@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import BlockReportMenu from '@/components/BlockReportMenu'
 import Link from 'next/link'
 
 /* -------------------------------------------------------------------------
@@ -112,6 +113,9 @@ export default function PingThreadPage() {
           <div className="text-sm font-semibold text-ink truncate">{t('threadWith', { name: other?.full_name || '' })}</div>
           {ping.skill?.name && <div className="text-[11px] text-muted truncate">{ping.skill.icon} {ping.skill.name}</div>}
         </div>
+        {other?.id && (
+          <BlockReportMenu targetId={other.id} targetName={other.full_name} tone="light" onBlocked={() => router.push('/session')} />
+        )}
       </div>
 
       {/* messages */}

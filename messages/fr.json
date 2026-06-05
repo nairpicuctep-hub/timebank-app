@@ -270,6 +270,19 @@
     "confirmCta": "Confirmer et libérer le TC",
     "footer": "Votre TimeCredit est libéré une fois que vous confirmez tous les deux la session."
   },
+  "moderation": {
+    "menu": "Options",
+    "block": "Bloquer",
+    "report": "Signaler",
+    "blockConfirm": "Bloquer {name} ? Cette personne ne pourra plus vous envoyer de ping ni de message, et vous ne vous verrez plus dans Explorer.",
+    "blockedToast": "{name} bloqué.",
+    "reportTitle": "Signaler {name}",
+    "reportHint": "Dites-nous ce qui ne va pas (facultatif). Notre équipe examine chaque signalement.",
+    "reportPlaceholder": "Que s'est-il passé ?",
+    "reportSubmit": "Envoyer le signalement",
+    "reportThanks": "Merci — notre équipe va l'examiner.",
+    "failed": "Une erreur est survenue : {message}"
+  },
   "ping": {
     "requests": "Demandes",
     "conversations": "Conversations",

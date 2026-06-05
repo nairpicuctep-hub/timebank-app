@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
+import BlockReportMenu from '@/components/BlockReportMenu'
 import Link from 'next/link'
 
 /* -------------------------------------------------------------------------
@@ -122,6 +123,9 @@ export default function TeacherPage() {
       {/* hero */}
       <div className="h-44 flex items-end px-5 pb-4 relative" style={{ background: 'linear-gradient(135deg,#F0A830,#E85030,#D03878)' }}>
         <Link href="/session" className="absolute top-12 left-5 text-white text-sm font-medium" style={{ opacity: 0.85 }}>← {tc('back')}</Link>
+        <div className="absolute top-11 right-5">
+          <BlockReportMenu targetId={String(id)} targetName={firstName} tone="dark" onBlocked={() => router.push('/session')} />
+        </div>
         <div className="flex items-end gap-4 w-full">
           <div className="w-16 h-16 rounded-full flex items-center justify-center font-display text-2xl text-white overflow-hidden flex-shrink-0"
             style={{ background: 'rgba(255,255,255,0.22)', border: '2px solid rgba(255,255,255,0.45)' }}>

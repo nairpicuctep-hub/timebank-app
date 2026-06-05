@@ -270,6 +270,19 @@
     "confirmCta": "Confirmă și eliberează TC",
     "footer": "TimeCredit-ul tău se eliberează după ce confirmați amândoi sesiunea."
   },
+  "moderation": {
+    "menu": "Opțiuni",
+    "block": "Blochează",
+    "report": "Raportează",
+    "blockConfirm": "Blochezi {name}? Nu îți va mai putea trimite ping-uri sau mesaje, și nu vă veți mai vedea în Explorează.",
+    "blockedToast": "{name} blocat.",
+    "reportTitle": "Raportează {name}",
+    "reportHint": "Spune-ne ce nu e în regulă (opțional). Echipa noastră analizează fiecare raport.",
+    "reportPlaceholder": "Ce s-a întâmplat?",
+    "reportSubmit": "Trimite raportul",
+    "reportThanks": "Mulțumim — echipa noastră va analiza acest lucru.",
+    "failed": "Ceva nu a mers: {message}"
+  },
   "ping": {
     "requests": "Cereri",
     "conversations": "Conversații",

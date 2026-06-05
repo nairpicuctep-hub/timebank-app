@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase/client'
    admin_set_skill) — never raw table writes from the client.
    ------------------------------------------------------------------------- */
 
-type Tab = 'overview' | 'users' | 'skills'
+type Tab = 'overview' | 'users' | 'skills' | 'reports'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -23,6 +23,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<any>(null)
   const [users, setUsers] = useState<any[]>([])
   const [skills, setSkills] = useState<any[]>([])
+  const [reports, setReports] = useState<any[]>([])
   const [q, setQ] = useState('')
   const [editing, setEditing] = useState<any>(null)   // user being VIP-edited
 
@@ -41,14 +42,16 @@ export default function AdminPage() {
 
   async function loadAll() {
     const supabase = createClient()
-    const [usersRes, skillsRes, ledgerRes, sessionsRes] = await Promise.all([
+    const [usersRes, skillsRes, ledgerRes, sessionsRes, reportsRes] = await Promise.all([
       supabase.from('profiles').select('id, full_name, location, city, country_code, level, xp, tc_available, tc_escrowed, sessions_taught, sessions_taken, is_vip, vip_title, headline_skill, is_admin, consent_research, created_at, signup_order').order('signup_order', { ascending: false }),
       supabase.from('skills').select('*').order('usage_count', { ascending: false }),
       supabase.from('tc_ledger').select('d_available, reason'),
       supabase.from('sessions').select('status, tc_released'),
+      supabase.from('user_reports').select('*, reporter:reporter_id(full_name), reported:reported_id(full_name)').order('created_at', { ascending: false }),
     ])
     setUsers(usersRes.data || [])
     setSkills(skillsRes.data || [])
+    setReports(reportsRes.data || [])
 
     const u = usersRes.data || []
     const s = skillsRes.data || []
@@ -64,7 +67,15 @@ export default function AdminPage() {
       sessionsTotal: sess.length,
       sessionsCompleted: sess.filter(x => x.status === 'completed').length,
       countries: new Set(u.map(x => x.country_code).filter(Boolean)).size,
+      openReports: (reportsRes.data || []).filter((r: any) => r.status === 'open').length,
     })
+  }
+
+  async function setReportStatus(id: number, status: string) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc('admin_set_report_status', { p_report_id: id, p_status: status })
+    if (error) { alert(error.message); return }
+    loadAll()
   }
 
   async function toggleVip(user: any, isVip: boolean, title?: string, headline?: string) {
@@ -107,7 +118,17 @@ export default function AdminPage() {
 
   const filteredUsers = users.filter(u => !q || (u.full_name || '').toLowerCase().includes(q.toLowerCase()) || (u.city || '').toLowerCase().includes(q.toLowerCase()))
   const filteredSkills = skills.filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase()))
+  const filteredReports = reports.filter(r => !q
+    || (r.reported?.full_name || '').toLowerCase().includes(q.toLowerCase())
+    || (r.reporter?.full_name || '').toLowerCase().includes(q.toLowerCase()))
   const CATS = ['Tech', 'Creative', 'Language', 'Business', 'Finance', 'Music', 'Lifestyle', 'Other']
+  const REPORT_STATUS = ['open', 'reviewing', 'resolved', 'dismissed']
+  const reportStatusColor: Record<string, { bg: string; tx: string }> = {
+    open:      { bg: 'var(--request-bg)', tx: 'var(--rose)' },
+    reviewing: { bg: '#fff7ed', tx: '#c2410c' },
+    resolved:  { bg: 'var(--mint-bg)', tx: 'var(--mint)' },
+    dismissed: { bg: 'var(--cream-2)', tx: 'var(--muted)' },
+  }
 
   return (
     <div className="min-h-screen pb-12 px-5 pt-12 max-w-3xl mx-auto">
@@ -119,7 +140,7 @@ export default function AdminPage() {
 
       {/* tabs */}
       <div className="flex gap-1 p-1 rounded-pill glass mb-5">
-        {(['overview', 'users', 'skills'] as Tab[]).map(t => (
+        {(['overview', 'users', 'skills', 'reports'] as Tab[]).map(t => (
           <button key={t} onClick={() => { setTab(t); setQ('') }}
             className="flex-1 py-2 rounded-pill text-xs font-semibold capitalize transition-all"
             style={tab === t ? { background: 'var(--grad)', color: '#fff' } : { color: 'var(--muted)' }}>
@@ -140,6 +161,7 @@ export default function AdminPage() {
             { label: 'Skills', val: `${stats.skills} (${stats.userAddedSkills} user-added)`, icon: '✨' },
             { label: 'Sessions', val: stats.sessionsTotal, icon: '🎓' },
             { label: 'Completed', val: stats.sessionsCompleted, icon: '✓' },
+            { label: 'Open reports', val: stats.openReports, icon: '⚑' },
           ].map(s => (
             <div key={s.label} className="glass p-4">
               <div className="text-xl mb-1">{s.icon}</div>
@@ -234,6 +256,44 @@ export default function AdminPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* REPORTS */}
+      {tab === 'reports' && (
+        <div className="flex flex-col gap-2">
+          {filteredReports.length === 0 && (
+            <div className="glass p-6 text-center"><p className="text-sm text-muted">No reports.</p></div>
+          )}
+          {filteredReports.map(r => {
+            const c = reportStatusColor[r.status] || reportStatusColor.open
+            return (
+              <div key={r.id} className="glass p-4">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="text-sm font-semibold text-ink truncate">
+                    ⚑ {r.reported?.full_name || 'Unknown'}
+                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-pill flex-shrink-0"
+                    style={{ background: c.bg, color: c.tx }}>{r.status}</span>
+                </div>
+                <div className="text-[11px] text-muted font-mono mb-2">
+                  by {r.reporter?.full_name || 'Unknown'} · {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+                {r.reason
+                  ? <p className="text-sm text-text mb-3">&ldquo;{r.reason}&rdquo;</p>
+                  : <p className="text-xs text-faint mb-3">No reason provided.</p>}
+                <div className="flex gap-1.5 flex-wrap">
+                  {REPORT_STATUS.filter(s => s !== r.status).map(s => (
+                    <button key={s} onClick={() => setReportStatus(r.id, s)}
+                      className="text-xs font-medium px-3 py-1.5 rounded-pill capitalize"
+                      style={{ background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

@@ -270,6 +270,19 @@
     "confirmCta": "Bevestig & geef TC vrij",
     "footer": "Je TimeCredit komt vrij zodra jullie beiden de sessie bevestigen."
   },
+  "moderation": {
+    "menu": "Opties",
+    "block": "Blokkeren",
+    "report": "Rapporteren",
+    "blockConfirm": "{name} blokkeren? Ze kunnen je niet meer pingen of berichten sturen, en jullie zien elkaar niet meer in Ontdek.",
+    "blockedToast": "{name} geblokkeerd.",
+    "reportTitle": "{name} rapporteren",
+    "reportHint": "Vertel ons wat er mis is (optioneel). Ons team bekijkt elke melding.",
+    "reportPlaceholder": "Wat is er gebeurd?",
+    "reportSubmit": "Melding versturen",
+    "reportThanks": "Bedankt — ons team bekijkt dit.",
+    "failed": "Er ging iets mis: {message}"
+  },
   "ping": {
     "requests": "Verzoeken",
     "conversations": "Gesprekken",

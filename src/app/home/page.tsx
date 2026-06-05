@@ -27,7 +27,7 @@ export default function HomePage() {
 
       const nowIso = new Date().toISOString()
 
-      const [profileRes, balanceRes, nextRes, teachersRes] = await Promise.all([
+      const [profileRes, balanceRes, nextRes, teachersRes, blockedRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', uid).single(),
         supabase.rpc('get_balance', { p_user_id: uid }),
         // soonest upcoming session the user is part of
@@ -44,12 +44,15 @@ export default function HomePage() {
           .eq('role', 'teacher')
           .neq('user_id', uid)
           .limit(40),
+        supabase.rpc('blocked_user_ids'),
       ])
 
-      // group teacher rows by profile (pattern from your session browser)
+      const blocked = new Set((blockedRes.data || []) as string[])
+
+      // group teacher rows by profile (pattern from your session browser), hiding blocked pairs
       const grouped = (teachersRes.data || []).reduce((acc: any, row: any) => {
         const p = row.profiles
-        if (!p?.id) return acc
+        if (!p?.id || blocked.has(p.id)) return acc
         if (!acc[p.id]) acc[p.id] = { profile: p, skills: [] }
         acc[p.id].skills.push({ ...row.skills, proficiency: row.proficiency })
         return acc

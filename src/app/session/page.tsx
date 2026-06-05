@@ -59,6 +59,7 @@ export default function SessionPage() {
   const [sentOut, setSentOut] = useState<any[]>([])   // outgoing pending requests
   const [convos, setConvos] = useState<any[]>([])     // accepted conversations (either direction)
   const [uid, setUid] = useState('')
+  const [blocked, setBlocked] = useState<Set<string>>(new Set())
   const [cat, setCat] = useState('All')
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -97,7 +98,7 @@ export default function SessionPage() {
       const myId = session.user.id
       setUid(myId)
 
-      const [teachersRes, sessionsRes] = await Promise.all([
+      const [teachersRes, sessionsRes, blockedRes] = await Promise.all([
         supabase.from('user_skills')
           .select('proficiency, skills(name, icon, category), profiles!inner(id, full_name, avatar_url, rating_as_teacher, sessions_taught, location)')
           .eq('role', 'teacher').neq('user_id', myId).limit(40),
@@ -105,7 +106,9 @@ export default function SessionPage() {
           .select('*, skill:skill_id(name, icon), teacher:teacher_id(full_name), learner:learner_id(full_name)')
           .or(`teacher_id.eq.${myId},learner_id.eq.${myId}`)
           .order('scheduled_at', { ascending: false }).limit(20),
+        supabase.rpc('blocked_user_ids'),
       ])
+      setBlocked(new Set((blockedRes.data || []) as string[]))
 
       const grouped = (teachersRes.data || []).reduce((acc: any, row: any) => {
         const p = row.profiles
@@ -123,7 +126,11 @@ export default function SessionPage() {
     load()
   }, [router])
 
-  const filtered = teachers.filter(tt => cat === 'All' || tt.skills.some((s: any) => s.category === cat))
+  const filtered = teachers.filter(tt =>
+    !blocked.has(tt.profile.id) && (cat === 'All' || tt.skills.some((s: any) => s.category === cat)))
+  const visiblePings = pings.filter(p => !blocked.has(p.from?.id))
+  const visibleConvos = convos.filter(p => !blocked.has((p.from?.id === uid ? p.to : p.from)?.id))
+  const visibleSent = sentOut.filter(p => !blocked.has(p.to?.id))
 
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -137,7 +144,7 @@ export default function SessionPage() {
   const TABS: [typeof tab, string][] = [
     ['browse', t('tabBrowse')],
     ['sessions', t('tabSessions')],
-    ['pings', `${t('tabPings')}${pings.length ? ` (${pings.length})` : ''}`],
+    ['pings', `${t('tabPings')}${visiblePings.length ? ` (${visiblePings.length})` : ''}`],
   ]
 
   return (
@@ -156,7 +163,7 @@ export default function SessionPage() {
               className="relative flex-1 py-2 rounded-pill text-xs font-semibold transition-all"
               style={tab === key ? { background: 'var(--grad)', color: '#fff' } : { color: 'var(--muted)' }}>
               {label}
-              {key === 'pings' && pings.length > 0 && tab !== 'pings' && (
+              {key === 'pings' && visiblePings.length > 0 && tab !== 'pings' && (
                 <span className="absolute" style={{
                   top: 4, right: 8, width: 7, height: 7, borderRadius: 999,
                   background: 'var(--rose, #D03878)',
@@ -263,17 +270,17 @@ export default function SessionPage() {
       {/* PINGS */}
       {tab === 'pings' && (
         <div className="px-5 flex flex-col gap-4">
-          {pings.length === 0 && sentOut.length === 0 && convos.length === 0 && (
+          {visiblePings.length === 0 && visibleSent.length === 0 && visibleConvos.length === 0 && (
             <div className="glass p-8 text-center">
               <p className="text-sm text-muted">{t('noPings')}</p>
             </div>
           )}
 
           {/* incoming requests — must Accept before any thread opens */}
-          {pings.length > 0 && (
+          {visiblePings.length > 0 && (
             <div className="flex flex-col gap-3">
               <div className="text-[10px] font-mono uppercase tracking-widest text-faint">{tping('requests')}</div>
-              {pings.map(p => (
+              {visiblePings.map(p => (
                 <div key={p.id} className="glass p-4">
                   <div className="text-sm text-ink mb-1">
                     {t.rich('pingWants', {
@@ -293,10 +300,10 @@ export default function SessionPage() {
           )}
 
           {/* accepted conversations — open the message thread */}
-          {convos.length > 0 && (
+          {visibleConvos.length > 0 && (
             <div className="flex flex-col gap-3">
               <div className="text-[10px] font-mono uppercase tracking-widest text-faint">{tping('conversations')}</div>
-              {convos.map(p => {
+              {visibleConvos.map(p => {
                 const other = p.from?.id === uid ? p.to : p.from
                 return (
                   <Link href={`/ping/${p.id}`} key={p.id}>
@@ -320,9 +327,9 @@ export default function SessionPage() {
           )}
 
           {/* outgoing requests still awaiting acceptance */}
-          {sentOut.length > 0 && (
+          {visibleSent.length > 0 && (
             <div className="flex flex-col gap-3">
-              {sentOut.map(p => (
+              {visibleSent.map(p => (
                 <div key={p.id} className="glass p-4">
                   <div className="text-xs text-muted">{tping('sentWaiting', { name: p.to?.full_name || t('someone') })}</div>
                   {p.message && <div className="text-xs text-ink mt-1">&ldquo;{p.message}&rdquo;</div>}

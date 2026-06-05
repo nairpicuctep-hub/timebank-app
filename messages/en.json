@@ -270,6 +270,19 @@
     "confirmCta": "Confirm & release TC",
     "footer": "Your TimeCredit releases once both of you confirm the session."
   },
+  "moderation": {
+    "menu": "Options",
+    "block": "Block",
+    "report": "Report",
+    "blockConfirm": "Block {name}? They won't be able to ping or message you, and you won't see each other in Explore.",
+    "blockedToast": "{name} blocked.",
+    "reportTitle": "Report {name}",
+    "reportHint": "Tell us what's wrong (optional). Our team reviews every report.",
+    "reportPlaceholder": "What happened?",
+    "reportSubmit": "Submit report",
+    "reportThanks": "Thanks — our team will review this.",
+    "failed": "Something went wrong: {message}"
+  },
   "ping": {
     "requests": "Requests",
     "conversations": "Conversations",
