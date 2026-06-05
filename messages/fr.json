@@ -152,6 +152,27 @@
     "music": "Musique",
     "lifestyle": "Style de vie"
   },
+  "wallet": {
+    "title": "TimeCredits",
+    "availableBalance": "Solde disponible",
+    "learningEstimate": "≈ {count, plural, one {# heure} other {# heures}} d'apprentissage, partout",
+    "escrow": "{amount} TC sous séquestre",
+    "earnedLifetime": "Gagné (total)",
+    "spentLifetime": "Dépensé (total)",
+    "goPremium": "Passer à Premium",
+    "premiumPitch": "Animez des sessions de groupe et bénéficiez d'une mise en relation prioritaire.",
+    "upgrade": "Mettre à niveau",
+    "activity": "Activité",
+    "noActivity": "Aucune activité — enseignez votre première session pour gagner des TC.",
+    "forfeited": "{amount} TC perdus",
+    "reasonSignupGrant": "Bonus de bienvenue",
+    "reasonSessionHold": "Session réservée",
+    "reasonSessionRefund": "Remboursement de session",
+    "reasonSessionEarn": "Session enseignée",
+    "reasonSessionSettle": "Session terminée",
+    "reasonReferralBonus": "Bonus de parrainage",
+    "reasonAdminGrant": "Crédit administrateur"
+  },
   "tour": {
     "balanceTitle": "Vos Time Credits",
     "balanceBody": "Gagnez-en 1 en enseignant une heure, dépensez-en 1 pour apprendre. Voici votre solde — quelques-uns offerts pour commencer.",

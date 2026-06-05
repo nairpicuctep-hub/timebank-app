@@ -152,6 +152,27 @@
     "music": "Muziek",
     "lifestyle": "Lifestyle"
   },
+  "wallet": {
+    "title": "TimeCredits",
+    "availableBalance": "Beschikbaar saldo",
+    "learningEstimate": "≈ {count, plural, one {# uur} other {# uur}} leren, waar dan ook",
+    "escrow": "{amount} TC in escrow",
+    "earnedLifetime": "Verdiend (totaal)",
+    "spentLifetime": "Besteed (totaal)",
+    "goPremium": "Word Premium",
+    "premiumPitch": "Host groepssessies en krijg voorrang bij matching.",
+    "upgrade": "Upgraden",
+    "activity": "Activiteit",
+    "noActivity": "Nog geen activiteit — geef je eerste sessie om TC te verdienen.",
+    "forfeited": "{amount} TC verbeurd",
+    "reasonSignupGrant": "Welkomstbonus",
+    "reasonSessionHold": "Sessie geboekt",
+    "reasonSessionRefund": "Sessieterugbetaling",
+    "reasonSessionEarn": "Sessie gegeven",
+    "reasonSessionSettle": "Sessie voltooid",
+    "reasonReferralBonus": "Doorverwijsbonus",
+    "reasonAdminGrant": "Beheerderstoekenning"
+  },
   "tour": {
     "balanceTitle": "Je Time Credits",
     "balanceBody": "Verdien er 1 door een uur les te geven, geef er 1 uit om te leren. Dit is je saldo — je krijgt er een paar van ons.",

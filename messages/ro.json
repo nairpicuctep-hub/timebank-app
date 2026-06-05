@@ -152,6 +152,27 @@
     "music": "Muzică",
     "lifestyle": "Stil de viață"
   },
+  "wallet": {
+    "title": "TimeCredits",
+    "availableBalance": "Sold disponibil",
+    "learningEstimate": "≈ {count, plural, one {# oră} few {# ore} other {# de ore}} de învățare, oriunde",
+    "escrow": "{amount} TC în custodie",
+    "earnedLifetime": "Câștigat (total)",
+    "spentLifetime": "Cheltuit (total)",
+    "goPremium": "Treci la Premium",
+    "premiumPitch": "Găzduiește sesiuni de grup și primește potrivire prioritară.",
+    "upgrade": "Upgrade",
+    "activity": "Activitate",
+    "noActivity": "Încă nicio activitate — predă prima sesiune ca să câștigi TC.",
+    "forfeited": "{amount} TC pierdute",
+    "reasonSignupGrant": "Bonus de bun venit",
+    "reasonSessionHold": "Sesiune rezervată",
+    "reasonSessionRefund": "Rambursare sesiune",
+    "reasonSessionEarn": "Sesiune predată",
+    "reasonSessionSettle": "Sesiune finalizată",
+    "reasonReferralBonus": "Bonus de recomandare",
+    "reasonAdminGrant": "Acordare admin"
+  },
   "tour": {
     "balanceTitle": "Time Credits-urile tale",
     "balanceBody": "Câștigi 1 predând o oră, cheltui 1 ca să înveți. Acesta e soldul tău — primești câteva de la noi.",

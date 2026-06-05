@@ -152,6 +152,27 @@
     "music": "Music",
     "lifestyle": "Lifestyle"
   },
+  "wallet": {
+    "title": "TimeCredits",
+    "availableBalance": "Available balance",
+    "learningEstimate": "≈ {count, plural, one {# hour} other {# hours}} of learning, anywhere",
+    "escrow": "{amount} TC held in escrow",
+    "earnedLifetime": "Earned (lifetime)",
+    "spentLifetime": "Spent (lifetime)",
+    "goPremium": "Go Premium",
+    "premiumPitch": "Host group sessions and get priority matching.",
+    "upgrade": "Upgrade",
+    "activity": "Activity",
+    "noActivity": "No activity yet — teach your first session to earn TC.",
+    "forfeited": "{amount} TC forfeited",
+    "reasonSignupGrant": "Welcome bonus",
+    "reasonSessionHold": "Booked a session",
+    "reasonSessionRefund": "Session refund",
+    "reasonSessionEarn": "Taught a session",
+    "reasonSessionSettle": "Session completed",
+    "reasonReferralBonus": "Referral bonus",
+    "reasonAdminGrant": "Admin grant"
+  },
   "tour": {
     "balanceTitle": "Your Time Credits",
     "balanceBody": "Earn 1 by teaching an hour, spend 1 to learn. This is your balance — start with a few on us.",
