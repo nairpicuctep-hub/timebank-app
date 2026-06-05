@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 
 /* -------------------------------------------------------------------------
@@ -15,6 +16,8 @@ import { createClient } from '@/lib/supabase/client'
    ------------------------------------------------------------------------- */
 
 export default function SessionRoomPage() {
+  const t = useTranslations('session')
+  const tc = useTranslations('common')
   const { id: sessionId } = useParams()
   const router = useRouter()
   const [session, setSession] = useState<any>(null)
@@ -78,8 +81,8 @@ export default function SessionRoomPage() {
   }, [sessionId])
 
   useEffect(() => {
-    const t = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => setElapsed(e => e + 1), 1000)
+    return () => clearInterval(timer)
   }, [])
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -93,7 +96,7 @@ export default function SessionRoomPage() {
   }
 
   async function endSession() {
-    if (!confirm('End this session? You’ll both confirm and rate next.')) return
+    if (!confirm(t('endConfirm'))) return
     setEnding(true)
     const supabase = createClient()
     await supabase.rpc('complete_session', { p_session_id: sessionId, p_actual_end: new Date().toISOString() })
@@ -102,24 +105,24 @@ export default function SessionRoomPage() {
 
   const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-sm font-mono text-muted">Joining session…</p></div>
-  if (!session) return <div className="min-h-screen flex items-center justify-center"><p className="text-sm text-muted">Session not found</p></div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-sm font-mono text-muted">{t('joining')}</p></div>
+  if (!session) return <div className="min-h-screen flex items-center justify-center"><p className="text-sm text-muted">{t('notFound')}</p></div>
 
   const room = session.daily_room_name ? `timebank-${session.daily_room_name}` : `timebank-${String(sessionId).slice(0, 12)}`
-  const jitsiUrl = `https://meet.jit.si/${room}#userInfo.displayName="${encodeURIComponent(currentUser?.email || 'User')}"&config.prejoinPageEnabled=false&interfaceConfig.SHOW_JITSI_WATERMARK=false`
+  const jitsiUrl = `https://meet.jit.si/${room}#userInfo.displayName="${encodeURIComponent(currentUser?.email || t('userFallback'))}"&config.prejoinPageEnabled=false&interfaceConfig.SHOW_JITSI_WATERMARK=false`
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh', background: 'var(--cream-1)' }}>
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 glass" style={{ borderRadius: 0 }}>
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--mint)', boxShadow: '0 0 6px var(--mint)' }} />
-          <span className="text-sm font-semibold text-ink truncate">{session.skill?.icon} {session.skill?.name || 'Session'}</span>
+          <span className="text-sm font-semibold text-ink truncate">{session.skill?.icon} {session.skill?.name || tc('session')}</span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-xs font-mono px-2.5 py-1 rounded-pill" style={{ background: 'var(--mint-bg)', color: 'var(--mint)' }}>⏱ {fmtTime(elapsed)}</span>
           <button onClick={endSession} disabled={ending} className="text-xs font-semibold px-3 py-1.5 rounded-btn"
             style={{ background: 'var(--request-bg)', color: 'var(--rose)', border: '1px solid #fecdd3' }}>
-            {ending ? '…' : 'End'}
+            {ending ? '…' : t('end')}
           </button>
         </div>
       </div>
@@ -131,7 +134,7 @@ export default function SessionRoomPage() {
 
         <div className="flex flex-col flex-shrink-0 glass md:w-80" style={{ borderRadius: 0, borderLeft: '1px solid var(--line-2)' }}>
           <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid var(--line-2)' }}>
-            {([['chat', '💬', 'Chat'], ['ai', '✦', 'AI Plan'], ['info', 'ℹ️', 'Info']] as const).map(([p, icon, label]) => (
+            {([['chat', '💬', t('tabChat')], ['ai', '✦', t('tabAi')], ['info', 'ℹ️', t('tabInfo')]] as const).map(([p, icon, label]) => (
               <button key={p} onClick={() => setPanel(p as any)}
                 className="flex-1 py-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
                 style={{ color: panel === p ? 'var(--coral)' : 'var(--muted)', borderBottom: panel === p ? '2px solid var(--coral)' : '2px solid transparent' }}>
@@ -143,7 +146,7 @@ export default function SessionRoomPage() {
           {panel === 'chat' && (
             <div className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 no-scrollbar">
-                {messages.length === 0 && <p className="text-xs text-center py-4 text-faint">Session started — say hello 👋</p>}
+                {messages.length === 0 && <p className="text-xs text-center py-4 text-faint">{t('sayHello')}</p>}
                 {messages.map(m => {
                   const mine = m.user_id === currentUser?.id
                   return (
@@ -158,7 +161,7 @@ export default function SessionRoomPage() {
                 <div ref={chatEndRef} />
               </div>
               <div className="p-3 flex gap-2 flex-shrink-0" style={{ borderTop: '1px solid var(--line-2)' }}>
-                <input value={msg} onChange={e => setMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Message…" style={{ fontSize: 13 }} />
+                <input value={msg} onChange={e => setMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder={t('messagePlaceholder')} style={{ fontSize: 13 }} />
                 <button onClick={send} className="btn-grad px-4 text-sm flex-shrink-0">→</button>
               </div>
             </div>
@@ -170,7 +173,7 @@ export default function SessionRoomPage() {
                 <div className="flex flex-col gap-2">
                   {plan.map((b: any, i: number) => (
                     <div key={i} className="glass p-3">
-                      <div className="text-sm font-semibold text-ink">{b.title || `Part ${i + 1}`}</div>
+                      <div className="text-sm font-semibold text-ink">{b.title || t('part', { number: i + 1 })}</div>
                       {b.detail && <div className="text-xs text-muted mt-1">{b.detail}</div>}
                     </div>
                   ))}
@@ -178,9 +181,9 @@ export default function SessionRoomPage() {
               ) : (
                 <div className="text-center py-8">
                   <div className="text-3xl mb-2">✦</div>
-                  <p className="text-sm font-semibold text-ink mb-1">AI lesson plan</p>
-                  <p className="text-xs text-muted mb-4">Gemini will draft a structured plan — objectives, flow, timing.</p>
-                  <button disabled className="btn-ghost w-full py-2.5 text-xs" style={{ opacity: 0.5 }}>Generate plan (coming soon)</button>
+                  <p className="text-sm font-semibold text-ink mb-1">{t('aiTitle')}</p>
+                  <p className="text-xs text-muted mb-4">{t('aiBody')}</p>
+                  <button disabled className="btn-ghost w-full py-2.5 text-xs" style={{ opacity: 0.5 }}>{t('aiCta')}</button>
                 </div>
               )}
             </div>
@@ -189,14 +192,14 @@ export default function SessionRoomPage() {
           {panel === 'info' && (
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
               <div className="glass p-3">
-                <div className="text-[9px] font-mono uppercase tracking-widest text-faint mb-1">{isTeacher ? 'Teaching' : 'Learning from'}</div>
+                <div className="text-[9px] font-mono uppercase tracking-widest text-faint mb-1">{isTeacher ? t('teaching') : t('learningFrom')}</div>
                 <div className="text-sm font-semibold text-ink">{isTeacher ? session.learner?.full_name : session.teacher?.full_name}</div>
               </div>
               <div className="glass p-3">
-                <div className="text-[9px] font-mono uppercase tracking-widest text-faint mb-1">Cost</div>
-                <div className="text-sm font-semibold text-ink">{session.tc_cost} TC · {session.duration_min} min</div>
+                <div className="text-[9px] font-mono uppercase tracking-widest text-faint mb-1">{t('cost')}</div>
+                <div className="text-sm font-semibold text-ink">{t('costValue', { cost: session.tc_cost, duration: session.duration_min })}</div>
               </div>
-              <p className="text-xs text-muted px-1">When you end the session, you’ll both rate and confirm. The TC releases once both confirm.</p>
+              <p className="text-xs text-muted px-1">{t('endNote')}</p>
             </div>
           )}
         </div>

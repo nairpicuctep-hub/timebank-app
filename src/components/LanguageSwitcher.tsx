@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { useLocale } from 'next-intl'
 import { setUserLocale } from '@/i18n/locale'
-import { locales, localeNames, type Locale } from '@/i18n/request'
+import { locales, localeNames, type Locale } from '@/i18n/config'
 
 /* -------------------------------------------------------------------------
    LanguageSwitcher — small locale dropdown.

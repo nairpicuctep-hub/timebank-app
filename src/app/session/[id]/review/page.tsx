@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 
 /* -------------------------------------------------------------------------
@@ -12,6 +13,8 @@ import { createClient } from '@/lib/supabase/client'
    ------------------------------------------------------------------------- */
 
 export default function ReviewPage() {
+  const t = useTranslations('review')
+  const tc = useTranslations('common')
   const { id: sessionId } = useParams()
   const router = useRouter()
   const [session, setSession] = useState<any>(null)
@@ -48,14 +51,14 @@ export default function ReviewPage() {
       p_topic: topic || null,
     })
     setSubmitting(false)
-    if (error) { alert('Couldn’t submit: ' + error.message); return }
+    if (error) { alert(t('couldntSubmit', { message: error.message })); return }
     setBothConfirmed(!!data?.tc_released)
     setDone(true)
   }
 
   if (!session) return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm font-mono text-muted">Loading…</p>
+      <p className="text-sm font-mono text-muted">{tc('loading')}</p>
     </div>
   )
 
@@ -69,15 +72,15 @@ export default function ReviewPage() {
         <span style={{ fontSize: 44, color: '#fff', position: 'relative' }}>✦</span>
       </div>
       <h1 className="font-display font-semibold text-[28px] text-ink mb-2 rise-1">
-        {bothConfirmed ? 'TC released!' : 'Thanks for confirming'}
+        {bothConfirmed ? t('releasedTitle') : t('thanksTitle')}
       </h1>
       <p className="text-sm text-muted mb-8 rise-2" style={{ maxWidth: 300 }}>
         {bothConfirmed
-          ? `Both of you confirmed — the Time Credit has moved${isTeacher ? ' into your wallet' : ` to ${otherName || 'your teacher'}`}.`
-          : `Waiting for ${otherName || 'the other person'} to confirm too. The TC releases once you both do.`}
+          ? (isTeacher ? t('releasedBodyTeacher') : t('releasedBodyLearner', { name: otherName || t('yourTeacher') }))
+          : t('waitingBody', { name: otherName || t('otherPerson') })}
       </p>
       <button onClick={() => router.push('/home')} className="btn-grad w-full py-4 text-sm rise-3" style={{ maxWidth: 320 }}>
-        Back to home →
+        {t('backHome')} →
       </button>
     </div>
   )
@@ -87,22 +90,22 @@ export default function ReviewPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-7 rise">
           <div className="text-4xl mb-3">{session.skill?.icon || '✦'}</div>
-          <h1 className="font-display font-semibold text-3xl text-ink mb-1">Session complete</h1>
-          <p className="text-sm text-muted">{isTeacher ? 'Nice work teaching!' : 'How was your session?'}</p>
+          <h1 className="font-display font-semibold text-3xl text-ink mb-1">{t('title')}</h1>
+          <p className="text-sm text-muted">{isTeacher ? t('subtitleTeacher') : t('subtitleLearner')}</p>
         </div>
 
         <div className="glass p-6 rise-1">
           <div className="mb-5">
             <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-2">
-              {isTeacher ? 'What did you teach?' : 'What did you learn?'}
+              {isTeacher ? t('whatTaught') : t('whatLearned')}
             </label>
             <input value={topic} onChange={e => setTopic(e.target.value)}
-              placeholder={`e.g. ${session.skill?.name || 'the'} basics`} />
+              placeholder={t('topicPlaceholder', { skill: session.skill?.name || t('topicSkillFallback') })} />
           </div>
 
           <div className="mb-6">
             <label className="block text-xs font-mono text-muted uppercase tracking-widest mb-3 text-center">
-              Rate your {isTeacher ? 'learner' : 'teacher'}
+              {isTeacher ? t('rateLearner') : t('rateTeacher')}
             </label>
             <div className="flex gap-2 justify-center">
               {[1, 2, 3, 4, 5].map(n => (
@@ -115,12 +118,12 @@ export default function ReviewPage() {
           </div>
 
           <button onClick={submit} disabled={submitting || !topic} className="btn-grad w-full py-3.5 text-sm">
-            {submitting ? 'Submitting…' : 'Confirm & release TC →'}
+            {submitting ? t('submitting') : `${t('confirmCta')} →`}
           </button>
         </div>
 
         <p className="text-center text-xs text-muted mt-4">
-          Your TimeCredit releases once both of you confirm the session.
+          {t('footer')}
         </p>
       </div>
     </div>

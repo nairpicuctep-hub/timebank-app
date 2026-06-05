@@ -1,9 +1,9 @@
 'use server'
 
 import { cookies } from 'next/headers'
-import { locales, defaultLocale, type Locale } from './request'
+import { locales, defaultLocale, LOCALE_COOKIE, type Locale } from './config'
 
-const COOKIE = 'tb_locale'
+const COOKIE = LOCALE_COOKIE
 
 export async function getUserLocale(): Promise<Locale> {
   const store = await cookies()
