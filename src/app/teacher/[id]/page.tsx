@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
 import Link from 'next/link'
@@ -12,9 +13,12 @@ import Link from 'next/link'
    Availability: day_of_week (0=Sun), start_time/end_time, is_active.
    ------------------------------------------------------------------------- */
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
 export default function TeacherPage() {
+  const t = useTranslations('teacher')
+  const tc = useTranslations('common')
+  const tday = useTranslations('days')
   const { id } = useParams()
   const router = useRouter()
   const [teacher, setTeacher] = useState<any>(null)
@@ -80,7 +84,7 @@ export default function TeacherPage() {
     })
 
     setBooking(false)
-    if (error) { alert('Couldn’t book: ' + error.message); return }
+    if (error) { alert(t('couldntBook', { message: error.message })); return }
     setBooked(true)
     setTimeout(() => router.push('/home'), 1800)
   }
@@ -92,32 +96,32 @@ export default function TeacherPage() {
       from_user: currentUser.id,
       to_user: id,
       skill_id: selectedSkill ? Number(selectedSkill) : null,
-      message: pingMsg || 'Are you free for a session soon?',
+      message: pingMsg || t('defaultPing'),
     })
     setPinging(false)
-    if (error) { alert('Couldn’t send ping: ' + error.message); return }
+    if (error) { alert(t('couldntPing', { message: error.message })); return }
     setShowPing(false); setPingSent(true)
   }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm font-mono text-muted">Loading…</p>
+      <p className="text-sm font-mono text-muted">{tc('loading')}</p>
     </div>
   )
   if (!teacher) return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm text-muted">Teacher not found</p>
+      <p className="text-sm text-muted">{t('notFound')}</p>
     </div>
   )
 
-  const firstName = teacher.full_name?.split(' ')[0] || 'Teacher'
+  const firstName = teacher.full_name?.split(' ')[0] || t('fallbackName')
 
   return (
     <div className="min-h-screen pb-28">
 
       {/* hero */}
       <div className="h-44 flex items-end px-5 pb-4 relative" style={{ background: 'linear-gradient(135deg,#F0A830,#E85030,#D03878)' }}>
-        <Link href="/session" className="absolute top-12 left-5 text-white text-sm font-medium" style={{ opacity: 0.85 }}>← Back</Link>
+        <Link href="/session" className="absolute top-12 left-5 text-white text-sm font-medium" style={{ opacity: 0.85 }}>← {tc('back')}</Link>
         <div className="flex items-end gap-4 w-full">
           <div className="w-16 h-16 rounded-full flex items-center justify-center font-display text-2xl text-white overflow-hidden flex-shrink-0"
             style={{ background: 'rgba(255,255,255,0.22)', border: '2px solid rgba(255,255,255,0.45)' }}>
@@ -128,7 +132,7 @@ export default function TeacherPage() {
           <div className="text-white">
             <div className="font-display font-semibold text-2xl leading-tight">{teacher.full_name}</div>
             <div className="text-xs" style={{ opacity: 0.9 }}>
-              {teacher.location || 'Worldwide'} · ★ {Number(teacher.rating_as_teacher || 0).toFixed(1)} · {teacher.sessions_taught || 0} sessions
+              {teacher.location || t('worldwide')} · ★ {Number(teacher.rating_as_teacher || 0).toFixed(1)} · {t('sessions', { count: teacher.sessions_taught || 0 })}
             </div>
           </div>
         </div>
@@ -139,14 +143,14 @@ export default function TeacherPage() {
         {booked && (
           <div className="p-5 text-center rounded-card" style={{ background: 'var(--mint-bg)', border: '1px solid #bbf7d0' }}>
             <div className="text-2xl mb-1">✦</div>
-            <div className="text-sm font-semibold" style={{ color: 'var(--mint)' }}>Booked! 1 TC is now held in escrow.</div>
-            <div className="text-xs text-muted mt-1">Released to {firstName} when you both confirm the session.</div>
+            <div className="text-sm font-semibold" style={{ color: 'var(--mint)' }}>{t('bookedTitle')}</div>
+            <div className="text-xs text-muted mt-1">{t('bookedBody', { name: firstName })}</div>
           </div>
         )}
         {pingSent && (
           <div className="p-4 text-center rounded-card glass">
-            <div className="text-sm font-semibold text-ink">Ping sent ⚡</div>
-            <div className="text-xs text-muted mt-0.5">{firstName} will be notified.</div>
+            <div className="text-sm font-semibold text-ink">{t('pingSentTitle')}</div>
+            <div className="text-xs text-muted mt-0.5">{t('pingSentBody', { name: firstName })}</div>
           </div>
         )}
 
@@ -154,9 +158,9 @@ export default function TeacherPage() {
 
         {/* skill select */}
         <div>
-          <h3 className="font-display font-semibold text-lg text-ink mb-3">What do you want to learn?</h3>
+          <h3 className="font-display font-semibold text-lg text-ink mb-3">{t('learnPrompt')}</h3>
           {skills.length === 0 ? (
-            <div className="glass p-4 text-center"><p className="text-sm text-muted">{firstName} hasn’t listed teaching skills yet.</p></div>
+            <div className="glass p-4 text-center"><p className="text-sm text-muted">{t('noTeachSkills', { name: firstName })}</p></div>
           ) : (
             <div className="flex flex-wrap gap-2">
               {skills.map(s => {
@@ -177,23 +181,23 @@ export default function TeacherPage() {
 
         {/* balance */}
         <div className="glass p-3 flex items-center gap-3">
-          <span className="text-sm text-muted">Your balance:</span>
+          <span className="text-sm text-muted">{t('yourBalance')}</span>
           <span className="font-mono text-sm grad-text font-semibold">{balance} TC</span>
-          {balance < 1 && <span className="text-xs ml-auto" style={{ color: '#b91c1c' }}>Not enough — earn TC first</span>}
+          {balance < 1 && <span className="text-xs ml-auto" style={{ color: '#b91c1c' }}>{t('notEnough')}</span>}
         </div>
 
         {/* ad-hoc ping */}
         <div>
           <button onClick={() => setShowPing(v => !v)} className="btn-ghost w-full py-3 text-sm flex items-center justify-center gap-2">
-            ⚡ Ask if available now
+            ⚡ {t('askAvailable')}
           </button>
           {showPing && (
             <div className="glass p-4 mt-3">
-              <p className="text-xs text-muted mb-2">Send a quick ping — they’ll get notified.</p>
+              <p className="text-xs text-muted mb-2">{t('pingHint')}</p>
               <textarea rows={3} value={pingMsg} onChange={e => setPingMsg(e.target.value)}
-                placeholder="Hi! Are you free for a quick session? I’d love to learn…" style={{ resize: 'none', marginBottom: 10 }} />
+                placeholder={t('pingPlaceholder')} style={{ resize: 'none', marginBottom: 10 }} />
               <button onClick={sendPing} disabled={pinging} className="btn-grad w-full py-2.5 text-sm">
-                {pinging ? 'Sending…' : 'Send ping →'}
+                {pinging ? t('sending') : `${t('sendPing')} →`}
               </button>
             </div>
           )}
@@ -201,17 +205,17 @@ export default function TeacherPage() {
 
         {/* availability */}
         <div>
-          <h3 className="font-display font-semibold text-lg text-ink mb-3">Book a session</h3>
+          <h3 className="font-display font-semibold text-lg text-ink mb-3">{t('bookSession')}</h3>
           {availability.length === 0 ? (
-            <div className="glass p-4 text-center"><p className="text-sm text-muted">No set availability — try the ping above.</p></div>
+            <div className="glass p-4 text-center"><p className="text-sm text-muted">{t('noAvailability')}</p></div>
           ) : (
             <div className="flex flex-col gap-2">
-              {DAYS.map((day, i) => {
+              {DAY_KEYS.map((dayKey, i) => {
                 const slots = availability.filter(a => a.day_of_week === i)
                 if (!slots.length) return null
                 return (
                   <div key={i} className="glass p-3">
-                    <div className="text-xs font-mono text-muted uppercase tracking-widest mb-2">{day}</div>
+                    <div className="text-xs font-mono text-muted uppercase tracking-widest mb-2">{tday(dayKey)}</div>
                     <div className="flex flex-wrap gap-2">
                       {slots.map(slot => {
                         const on = selectedSlot?.id === slot.id
@@ -237,7 +241,7 @@ export default function TeacherPage() {
         {selectedSlot && (
           <button onClick={bookSession} disabled={booking || balance < 1}
             className="btn-grad w-full py-4 text-sm">
-            {booking ? 'Booking…' : `Book ${DAYS[selectedSlot.day_of_week]} ${selectedSlot.start_time.slice(0, 5)} — 1 TC`}
+            {booking ? t('booking') : t('bookCta', { day: tday(DAY_KEYS[selectedSlot.day_of_week]), time: selectedSlot.start_time.slice(0, 5) })}
           </button>
         )}
       </div>

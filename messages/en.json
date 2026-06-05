@@ -197,6 +197,35 @@
     "accept": "Accept",
     "decline": "Decline"
   },
+  "days": {
+    "sun": "Sun", "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat"
+  },
+  "teacher": {
+    "notFound": "Teacher not found",
+    "fallbackName": "Teacher",
+    "worldwide": "Worldwide",
+    "sessions": "{count} sessions",
+    "bookedTitle": "Booked! 1 TC is now held in escrow.",
+    "bookedBody": "Released to {name} when you both confirm the session.",
+    "pingSentTitle": "Ping sent ⚡",
+    "pingSentBody": "{name} will be notified.",
+    "learnPrompt": "What do you want to learn?",
+    "noTeachSkills": "{name} hasn't listed teaching skills yet.",
+    "yourBalance": "Your balance:",
+    "notEnough": "Not enough — earn TC first",
+    "askAvailable": "Ask if available now",
+    "pingHint": "Send a quick ping — they'll get notified.",
+    "pingPlaceholder": "Hi! Are you free for a quick session? I'd love to learn…",
+    "sending": "Sending…",
+    "sendPing": "Send ping",
+    "bookSession": "Book a session",
+    "noAvailability": "No set availability — try the ping above.",
+    "booking": "Booking…",
+    "bookCta": "Book {day} {time} — 1 TC",
+    "couldntBook": "Couldn't book: {message}",
+    "couldntPing": "Couldn't send ping: {message}",
+    "defaultPing": "Are you free for a session soon?"
+  },
   "tour": {
     "balanceTitle": "Your Time Credits",
     "balanceBody": "Earn 1 by teaching an hour, spend 1 to learn. This is your balance — start with a few on us.",

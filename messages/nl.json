@@ -197,6 +197,35 @@
     "accept": "Accepteren",
     "decline": "Weigeren"
   },
+  "days": {
+    "sun": "zo", "mon": "ma", "tue": "di", "wed": "wo", "thu": "do", "fri": "vr", "sat": "za"
+  },
+  "teacher": {
+    "notFound": "Docent niet gevonden",
+    "fallbackName": "Docent",
+    "worldwide": "Wereldwijd",
+    "sessions": "{count} sessies",
+    "bookedTitle": "Geboekt! 1 TC staat nu in escrow.",
+    "bookedBody": "Vrijgegeven aan {name} zodra jullie beiden de sessie bevestigen.",
+    "pingSentTitle": "Ping verzonden ⚡",
+    "pingSentBody": "{name} ontvangt een melding.",
+    "learnPrompt": "Wat wil je leren?",
+    "noTeachSkills": "{name} heeft nog geen lesvaardigheden opgegeven.",
+    "yourBalance": "Je saldo:",
+    "notEnough": "Niet genoeg — verdien eerst TC",
+    "askAvailable": "Vraag of nu beschikbaar",
+    "pingHint": "Stuur een snelle ping — ze krijgen een melding.",
+    "pingPlaceholder": "Hoi! Heb je tijd voor een korte sessie? Ik zou graag willen leren…",
+    "sending": "Verzenden…",
+    "sendPing": "Ping versturen",
+    "bookSession": "Boek een sessie",
+    "noAvailability": "Geen ingestelde beschikbaarheid — probeer de ping hierboven.",
+    "booking": "Bezig met boeken…",
+    "bookCta": "Boek {day} {time} — 1 TC",
+    "couldntBook": "Boeken mislukt: {message}",
+    "couldntPing": "Ping versturen mislukt: {message}",
+    "defaultPing": "Heb je binnenkort tijd voor een sessie?"
+  },
   "tour": {
     "balanceTitle": "Je Time Credits",
     "balanceBody": "Verdien er 1 door een uur les te geven, geef er 1 uit om te leren. Dit is je saldo — je krijgt er een paar van ons.",

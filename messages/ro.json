@@ -197,6 +197,35 @@
     "accept": "Acceptă",
     "decline": "Refuză"
   },
+  "days": {
+    "sun": "Dum", "mon": "Lun", "tue": "Mar", "wed": "Mie", "thu": "Joi", "fri": "Vin", "sat": "Sâm"
+  },
+  "teacher": {
+    "notFound": "Profesor negăsit",
+    "fallbackName": "Profesor",
+    "worldwide": "Oriunde în lume",
+    "sessions": "{count} sesiuni",
+    "bookedTitle": "Rezervat! 1 TC este acum în custodie.",
+    "bookedBody": "Eliberat către {name} când confirmați amândoi sesiunea.",
+    "pingSentTitle": "Ping trimis ⚡",
+    "pingSentBody": "{name} va fi notificat.",
+    "learnPrompt": "Ce vrei să înveți?",
+    "noTeachSkills": "{name} nu a listat încă abilități de predare.",
+    "yourBalance": "Soldul tău:",
+    "notEnough": "Insuficient — câștigă mai întâi TC",
+    "askAvailable": "Întreabă dacă e disponibil acum",
+    "pingHint": "Trimite un ping rapid — va fi notificat.",
+    "pingPlaceholder": "Salut! Ești liber pentru o sesiune scurtă? Mi-ar plăcea să învăț…",
+    "sending": "Se trimite…",
+    "sendPing": "Trimite ping",
+    "bookSession": "Rezervă o sesiune",
+    "noAvailability": "Nicio disponibilitate setată — încearcă ping-ul de mai sus.",
+    "booking": "Se rezervă…",
+    "bookCta": "Rezervă {day} {time} — 1 TC",
+    "couldntBook": "Rezervarea a eșuat: {message}",
+    "couldntPing": "Trimiterea ping-ului a eșuat: {message}",
+    "defaultPing": "Ești liber pentru o sesiune în curând?"
+  },
   "tour": {
     "balanceTitle": "Time Credits-urile tale",
     "balanceBody": "Câștigi 1 predând o oră, cheltui 1 ca să înveți. Acesta e soldul tău — primești câteva de la noi.",

@@ -197,6 +197,35 @@
     "accept": "Accepter",
     "decline": "Refuser"
   },
+  "days": {
+    "sun": "dim", "mon": "lun", "tue": "mar", "wed": "mer", "thu": "jeu", "fri": "ven", "sat": "sam"
+  },
+  "teacher": {
+    "notFound": "Enseignant introuvable",
+    "fallbackName": "Enseignant",
+    "worldwide": "Partout dans le monde",
+    "sessions": "{count} sessions",
+    "bookedTitle": "Réservé ! 1 TC est désormais sous séquestre.",
+    "bookedBody": "Versé à {name} lorsque vous confirmez tous les deux la session.",
+    "pingSentTitle": "Ping envoyé ⚡",
+    "pingSentBody": "{name} sera notifié.",
+    "learnPrompt": "Que voulez-vous apprendre ?",
+    "noTeachSkills": "{name} n'a pas encore indiqué de compétences à enseigner.",
+    "yourBalance": "Votre solde :",
+    "notEnough": "Pas assez — gagnez d'abord des TC",
+    "askAvailable": "Demander si disponible maintenant",
+    "pingHint": "Envoyez un ping rapide — la personne sera notifiée.",
+    "pingPlaceholder": "Bonjour ! Êtes-vous libre pour une courte session ? J'aimerais apprendre…",
+    "sending": "Envoi…",
+    "sendPing": "Envoyer le ping",
+    "bookSession": "Réserver une session",
+    "noAvailability": "Aucune disponibilité définie — essayez le ping ci-dessus.",
+    "booking": "Réservation…",
+    "bookCta": "Réserver {day} {time} — 1 TC",
+    "couldntBook": "Échec de la réservation : {message}",
+    "couldntPing": "Échec de l'envoi du ping : {message}",
+    "defaultPing": "Êtes-vous libre pour une session bientôt ?"
+  },
   "tour": {
     "balanceTitle": "Vos Time Credits",
     "balanceBody": "Gagnez-en 1 en enseignant une heure, dépensez-en 1 pour apprendre. Voici votre solde — quelques-uns offerts pour commencer.",
