@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import SkillPicker from '@/components/SkillPicker'
 import BottomNav from '@/components/layout/BottomNav'
+import { keepCanonicalSlugs } from '@/lib/skills'
 
 // rich-text chunk renderers shared across steps
 const grad = (chunks: ReactNode) => <span className="grad-text">{chunks}</span>
@@ -80,10 +81,24 @@ export default function OnboardingPage() {
     if (!session) { router.push('/auth'); return }
     const uid = session.user.id
 
-    // profile: skills, geo, language, optional demographics
+    // GUARD: resolve the picked slugs against the skills table FIRST, so we only
+    // ever persist canonical slugs that point at a real skills row. This prevents
+    // orphan slugs (e.g. a hyphenated or never-created slug) from leaking into
+    // profiles.teach_skills / learn_skills. SkillPicker already writes canonical
+    // slugs; this is the belt-and-braces backstop.
+    const slugs = Array.from(new Set([...teachSkills, ...learnSkills]))
+    const { data: rows } = slugs.length
+      ? await supabase.from('skills').select('id, slug').in('slug', slugs)
+      : { data: [] as { id: number; slug: string }[] }
+    const idBySlug = Object.fromEntries((rows || []).map(r => [r.slug, r.id]))
+    const existingSlugs = Object.keys(idBySlug)
+    const validTeach = keepCanonicalSlugs(teachSkills, existingSlugs)
+    const validLearn = keepCanonicalSlugs(learnSkills, existingSlugs)
+
+    // profile: skills (validated), geo, language, optional demographics
     await supabase.from('profiles').update({
-      teach_skills: teachSkills,
-      learn_skills: learnSkills,
+      teach_skills: validTeach,
+      learn_skills: validLearn,
       language: primaryLang,
       languages_spoken: langs,
       city: city || null,
@@ -103,19 +118,14 @@ export default function OnboardingPage() {
       flow_activity: mirror.flow || null,
     }, { onConflict: 'user_id' })
 
-    // normalised user_skills
-    const slugs = Array.from(new Set([...teachSkills, ...learnSkills]))
-    if (slugs.length) {
-      const { data: rows } = await supabase.from('skills').select('id, slug').in('slug', slugs)
-      const idBySlug = Object.fromEntries((rows || []).map(r => [r.slug, r.id]))
-      const records = [
-        ...teachSkills.filter(s => idBySlug[s]).map(s => ({ user_id: uid, skill_id: idBySlug[s], role: 'teacher', proficiency: levels[s] || 2 })),
-        ...learnSkills.filter(s => idBySlug[s]).map(s => ({ user_id: uid, skill_id: idBySlug[s], role: 'learner', proficiency: 1 })),
-      ]
-      if (records.length) {
-        await supabase.from('user_skills').delete().eq('user_id', uid)
-        await supabase.from('user_skills').insert(records)
-      }
+    // normalised user_skills (same validated set)
+    const records = [
+      ...validTeach.map(s => ({ user_id: uid, skill_id: idBySlug[s], role: 'teacher', proficiency: levels[s] || 2 })),
+      ...validLearn.map(s => ({ user_id: uid, skill_id: idBySlug[s], role: 'learner', proficiency: 1 })),
+    ]
+    if (records.length) {
+      await supabase.from('user_skills').delete().eq('user_id', uid)
+      await supabase.from('user_skills').insert(records)
     }
 
     // consent (logged via RPC) — research opt-in is the lawful aggregate gate

@@ -83,7 +83,10 @@ export default function SkillPicker({
     const { data, error } = await supabase.rpc('add_skill', { p_name: term, p_language: language })
     setAdding(false)
     if (error) { alert('Couldn’t add skill: ' + error.message); return }
-    // add_skill dedupes server-side, so data is the canonical skill
+    // add_skill dedupes server-side and inserts the row (is_approved=false) when new.
+    // We reference data.slug — the canonical slug from the returned skills row —
+    // never a slug derived on the client. This guarantees the selected slug always
+    // points at a real skills row.
     if (data && !isSelected(data.slug)) {
       onChange([...selected, data.slug])
       setChosen(prev => [...prev, data])
