@@ -11,7 +11,10 @@
     "edit": "Editează",
     "done": "Gata",
     "tc": "TC",
-    "perHour": "1 TC / oră"
+    "perHour": "1 TC / oră",
+    "session": "Sesiune",
+    "learner": "cursant",
+    "teacher": "profesor"
   },
   "nav": {
     "home": "Acasă",
@@ -121,12 +124,14 @@
     "inEscrow": "{amount} TC în custodie",
     "currentLevel": "Nivel curent",
     "xpProgress": "Progres XP",
+    "xpMax": "MAX",
     "browseSkills": "Răsfoiește abilitățile",
+    "verifiedMaster": "Maestru verificat",
     "upNext": "Urmează",
     "teaching": "Predai pentru {name}",
     "withTeacher": "cu {name}",
     "coldStartTitle": "Ești printre primii — și asta e un lucru bun.",
-    "coldStartBody": "Ai {amount} TC gata de cheltuit. Iată cum începi:",
+    "coldStartBody": "Ai <b>{amount} TC</b> gata de cheltuit. Iată cum începi:",
     "setAvailability": "Setează-ți disponibilitatea",
     "setAvailabilityHint": "Ca să te poată rezerva cursanții — și să câștigi TC",
     "exploreSkills": "Explorează abilitățile",
@@ -136,6 +141,16 @@
     "noTeachers": "Încă niciun profesor în {category}. Încearcă altă categorie sau revino curând.",
     "viewProfile": "Vezi profilul",
     "sessions": "{count} sesiuni"
+  },
+  "categories": {
+    "all": "Toate",
+    "tech": "Tehnologie",
+    "creative": "Creativ",
+    "language": "Limbă",
+    "business": "Afaceri",
+    "finance": "Finanțe",
+    "music": "Muzică",
+    "lifestyle": "Stil de viață"
   },
   "tour": {
     "balanceTitle": "Time Credits-urile tale",

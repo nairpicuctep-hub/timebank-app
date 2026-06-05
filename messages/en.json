@@ -11,7 +11,10 @@
     "edit": "Edit",
     "done": "Done",
     "tc": "TC",
-    "perHour": "1 TC / hr"
+    "perHour": "1 TC / hr",
+    "session": "Session",
+    "learner": "learner",
+    "teacher": "teacher"
   },
   "nav": {
     "home": "Home",
@@ -121,12 +124,14 @@
     "inEscrow": "{amount} TC held in escrow",
     "currentLevel": "Current level",
     "xpProgress": "XP progress",
+    "xpMax": "MAX",
     "browseSkills": "Browse skills",
+    "verifiedMaster": "Verified Master",
     "upNext": "Up next",
     "teaching": "Teaching {name}",
     "withTeacher": "with {name}",
     "coldStartTitle": "You're early — that's a good thing.",
-    "coldStartBody": "You've got {amount} TC ready to spend. Here's how to get going:",
+    "coldStartBody": "You've got <b>{amount} TC</b> ready to spend. Here's how to get going:",
     "setAvailability": "Set your availability",
     "setAvailabilityHint": "So learners can book you — and you earn TC",
     "exploreSkills": "Explore skills",
@@ -136,6 +141,16 @@
     "noTeachers": "No teachers in {category} yet. Try another category or check back soon.",
     "viewProfile": "View profile",
     "sessions": "{count} sessions"
+  },
+  "categories": {
+    "all": "All",
+    "tech": "Tech",
+    "creative": "Creative",
+    "language": "Language",
+    "business": "Business",
+    "finance": "Finance",
+    "music": "Music",
+    "lifestyle": "Lifestyle"
   },
   "tour": {
     "balanceTitle": "Your Time Credits",

@@ -11,7 +11,10 @@
     "edit": "Bewerken",
     "done": "Klaar",
     "tc": "TC",
-    "perHour": "1 TC / uur"
+    "perHour": "1 TC / uur",
+    "session": "Sessie",
+    "learner": "leerling",
+    "teacher": "docent"
   },
   "nav": {
     "home": "Start",
@@ -121,12 +124,14 @@
     "inEscrow": "{amount} TC in escrow",
     "currentLevel": "Huidig niveau",
     "xpProgress": "XP-voortgang",
+    "xpMax": "MAX",
     "browseSkills": "Vaardigheden verkennen",
+    "verifiedMaster": "Geverifieerde Meester",
     "upNext": "Hierna",
     "teaching": "Les aan {name}",
     "withTeacher": "met {name}",
     "coldStartTitle": "Je bent er vroeg bij — dat is juist goed.",
-    "coldStartBody": "Je hebt {amount} TC klaar om te besteden. Zo ga je van start:",
+    "coldStartBody": "Je hebt <b>{amount} TC</b> klaar om te besteden. Zo ga je van start:",
     "setAvailability": "Stel je beschikbaarheid in",
     "setAvailabilityHint": "Zodat leerlingen je kunnen boeken — en jij TC verdient",
     "exploreSkills": "Vaardigheden verkennen",
@@ -136,6 +141,16 @@
     "noTeachers": "Nog geen docenten in {category}. Probeer een andere categorie of kom snel terug.",
     "viewProfile": "Profiel bekijken",
     "sessions": "{count} sessies"
+  },
+  "categories": {
+    "all": "Alles",
+    "tech": "Tech",
+    "creative": "Creatief",
+    "language": "Taal",
+    "business": "Zakelijk",
+    "finance": "Financiën",
+    "music": "Muziek",
+    "lifestyle": "Lifestyle"
   },
   "tour": {
     "balanceTitle": "Je Time Credits",

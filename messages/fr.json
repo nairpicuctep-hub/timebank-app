@@ -11,7 +11,10 @@
     "edit": "Modifier",
     "done": "Terminé",
     "tc": "TC",
-    "perHour": "1 TC / h"
+    "perHour": "1 TC / h",
+    "session": "Session",
+    "learner": "apprenant",
+    "teacher": "enseignant"
   },
   "nav": {
     "home": "Accueil",
@@ -121,12 +124,14 @@
     "inEscrow": "{amount} TC sous séquestre",
     "currentLevel": "Niveau actuel",
     "xpProgress": "Progression XP",
+    "xpMax": "MAX",
     "browseSkills": "Parcourir les compétences",
+    "verifiedMaster": "Maître vérifié",
     "upNext": "À suivre",
     "teaching": "Vous enseignez à {name}",
     "withTeacher": "avec {name}",
     "coldStartTitle": "Vous êtes parmi les premiers — c'est une bonne chose.",
-    "coldStartBody": "Vous avez {amount} TC prêts à dépenser. Voici comment démarrer :",
+    "coldStartBody": "Vous avez <b>{amount} TC</b> prêts à dépenser. Voici comment démarrer :",
     "setAvailability": "Définir vos disponibilités",
     "setAvailabilityHint": "Pour que les apprenants vous réservent — et que vous gagniez des TC",
     "exploreSkills": "Explorer les compétences",
@@ -136,6 +141,16 @@
     "noTeachers": "Pas encore d'enseignants dans {category}. Essayez une autre catégorie ou revenez bientôt.",
     "viewProfile": "Voir le profil",
     "sessions": "{count} sessions"
+  },
+  "categories": {
+    "all": "Tout",
+    "tech": "Tech",
+    "creative": "Créatif",
+    "language": "Langue",
+    "business": "Business",
+    "finance": "Finance",
+    "music": "Musique",
+    "lifestyle": "Style de vie"
   },
   "tour": {
     "balanceTitle": "Vos Time Credits",
