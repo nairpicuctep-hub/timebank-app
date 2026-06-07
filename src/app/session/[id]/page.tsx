@@ -28,6 +28,8 @@ export default function SessionRoomPage() {
   const [messages, setMessages] = useState<any[]>([])
   const [msg, setMsg] = useState('')
   const [plan, setPlan] = useState<any[]>([])
+  const [planLoading, setPlanLoading] = useState(false)
+  const [planError, setPlanError] = useState('')
   const [elapsed, setElapsed] = useState(0)
   const [ending, setEnding] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
@@ -98,6 +100,28 @@ export default function SessionRoomPage() {
       .insert({ session_id: sessionId, user_id: currentUser.id, body }).select().single()
     if (error) { setMsg(body); return }
     if (data) setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data])
+  }
+
+  async function generatePlan() {
+    setPlanLoading(true)
+    setPlanError('')
+    try {
+      const res = await fetch('/api/lesson-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok || !Array.isArray(json.blocks) || !json.blocks.length) {
+        setPlanError(json?.error || t('aiError'))
+        return
+      }
+      setPlan(json.blocks)
+    } catch {
+      setPlanError(t('aiError'))
+    } finally {
+      setPlanLoading(false)
+    }
   }
 
   async function endSession() {
@@ -188,7 +212,10 @@ export default function SessionRoomPage() {
                   <div className="text-3xl mb-2">✦</div>
                   <p className="text-sm font-semibold text-ink mb-1">{t('aiTitle')}</p>
                   <p className="text-xs text-muted mb-4">{t('aiBody')}</p>
-                  <button disabled className="btn-ghost w-full py-2.5 text-xs" style={{ opacity: 0.5 }}>{t('aiCta')}</button>
+                  {planError && <p className="text-xs mb-3" style={{ color: '#b91c1c' }}>{planError}</p>}
+                  <button onClick={generatePlan} disabled={planLoading} className="btn-ghost w-full py-2.5 text-xs">
+                    {planLoading ? t('aiGenerating') : t('aiCta')}
+                  </button>
                 </div>
               )}
             </div>

@@ -74,7 +74,7 @@ export default function TeacherPage() {
     const [h, m] = selectedSlot.start_time.split(':')
     when.setHours(parseInt(h), parseInt(m), 0, 0)
 
-    const { error } = await supabase.rpc('book_session', {
+    const { data: newSession, error } = await supabase.rpc('book_session', {
       p_learner_id: currentUser.id,
       p_teacher_id: id,
       p_skill_id: String(selectedSkill),
@@ -87,6 +87,19 @@ export default function TeacherPage() {
     setBooking(false)
     if (error) { alert(t('couldntBook', { message: error.message })); return }
     setBooked(true)
+
+    // Fire-and-forget: draft an AI lesson plan for this session (Gemini, server-side).
+    // Best-effort only — the session works fine without one if this fails or is slow,
+    // and the learner/teacher can also generate one later from the session room.
+    const newId = (newSession as any)?.id
+    if (newId) {
+      fetch('/api/lesson-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: newId }),
+      }).catch(() => {})
+    }
+
     setTimeout(() => router.push('/home'), 1800)
   }
 
