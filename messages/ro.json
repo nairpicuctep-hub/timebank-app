@@ -249,6 +249,19 @@
     "endNote": "Când închei sesiunea, veți evalua și confirma amândoi. TC-ul se eliberează după ce confirmați amândoi.",
     "userFallback": "Utilizator"
   },
+  "support": {
+    "entryTitle": "Ajutor & asistență",
+    "entryHint": "Discută cu asistentul nostru sau contactează echipa",
+    "title": "Ajutor",
+    "subtitle": "Întreabă-mă orice despre TimeBank Academy",
+    "greeting": "Bună! Sunt asistentul de ajutor TimeBank Academy. Întreabă-mă orice despre cum funcționează aplicația — TimeCredits, programări, abilități, siguranță, orice. Dacă nu pot ajuta, voi transmite întrebarea echipei.",
+    "placeholder": "Pune o întrebare…",
+    "typing": "Mă gândesc…",
+    "genericError": "Ceva nu a mers bine din partea mea — încearcă din nou peste puțin timp.",
+    "emailPrompt": "Aș vrea să transmit asta echipei ca să te poată ajuta direct. Care e cel mai bun email la care te pot contacta?",
+    "emailPlaceholder": "tu@exemplu.com",
+    "escalatedFallback": "Mulțumesc — am transmis asta echipei. Îți vor răspunde prin email la {email}."
+  },
   "review": {
     "couldntSubmit": "Trimiterea a eșuat: {message}",
     "releasedTitle": "TC eliberat!",

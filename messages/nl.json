@@ -249,6 +249,19 @@
     "endNote": "Wanneer je de sessie beëindigt, beoordelen en bevestigen jullie beiden. De TC komt vrij zodra jullie beiden bevestigen.",
     "userFallback": "Gebruiker"
   },
+  "support": {
+    "entryTitle": "Hulp & ondersteuning",
+    "entryHint": "Chat met onze hulpassistent of bereik het team",
+    "title": "Hulp",
+    "subtitle": "Vraag me alles over TimeBank Academy",
+    "greeting": "Hoi! Ik ben de hulpassistent van TimeBank Academy. Vraag me gerust alles over hoe de app werkt — TimeCredits, boekingen, vaardigheden, veiligheid, noem maar op. Als ik het niet kan beantwoorden, geef ik het door aan het team.",
+    "placeholder": "Stel een vraag…",
+    "typing": "Even denken…",
+    "genericError": "Er ging iets mis aan mijn kant — probeer het zo nog eens.",
+    "emailPrompt": "Ik geef dit graag door aan het team zodat ze je rechtstreeks kunnen helpen. Wat is het beste e-mailadres om je te bereiken?",
+    "emailPlaceholder": "jij@voorbeeld.com",
+    "escalatedFallback": "Bedankt — ik heb dit doorgegeven aan het team. Ze reageren via e-mail naar {email}."
+  },
   "review": {
     "couldntSubmit": "Verzenden mislukt: {message}",
     "releasedTitle": "TC vrijgegeven!",

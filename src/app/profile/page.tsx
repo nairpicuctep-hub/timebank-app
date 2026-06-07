@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import SupportChat from '@/components/SupportChat'
 import Link from 'next/link'
 
 /* -------------------------------------------------------------------------
@@ -41,11 +42,13 @@ export default function ProfilePage() {
   const tc = useTranslations('common')
   const tl = useTranslations('levels')
   const tprof = useTranslations('proficiency')
+  const tsupport = useTranslations('support')
   const tbadge = useTranslations('badges')
   const [data, setData] = useState<any>(null)
   const [badges, setBadges] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [showSupport, setShowSupport] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -264,6 +267,16 @@ export default function ProfilePage() {
           <span className="text-muted">→</span>
         </Link>
 
+        {/* help / support */}
+        <button onClick={() => setShowSupport(true)} className="glass p-4 flex items-center gap-3 text-left w-full">
+          <span className="text-xl">💬</span>
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-ink">{tsupport('entryTitle')}</div>
+            <div className="text-xs text-muted">{tsupport('entryHint')}</div>
+          </div>
+          <span className="text-muted">→</span>
+        </button>
+
         {/* language */}
         <div className="glass p-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -289,6 +302,7 @@ export default function ProfilePage() {
       </div>
 
       <BottomNav active="profile" />
+      {showSupport && <SupportChat onClose={() => setShowSupport(false)} />}
     </div>
   )
 }

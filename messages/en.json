@@ -249,6 +249,19 @@
     "endNote": "When you end the session, you'll both rate and confirm. The TC releases once both confirm.",
     "userFallback": "User"
   },
+  "support": {
+    "entryTitle": "Help & support",
+    "entryHint": "Chat with our help assistant or reach the team",
+    "title": "Help",
+    "subtitle": "Ask me anything about TimeBank Academy",
+    "greeting": "Hi! I'm the TimeBank Academy help assistant. Ask me anything about how the app works — TimeCredits, bookings, skills, safety, you name it. If I can't help, I'll pass it on to the team.",
+    "placeholder": "Ask a question…",
+    "typing": "Thinking…",
+    "genericError": "Something went wrong on my end — please try again in a moment.",
+    "emailPrompt": "I'd like to pass this to the team so they can help directly. What's the best email to reach you?",
+    "emailPlaceholder": "you@example.com",
+    "escalatedFallback": "Thanks — I've passed this to the team. They'll reply to you by email at {email}."
+  },
   "review": {
     "couldntSubmit": "Couldn't submit: {message}",
     "releasedTitle": "TC released!",

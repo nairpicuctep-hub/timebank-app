@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase/client'
    admin_set_skill) — never raw table writes from the client.
    ------------------------------------------------------------------------- */
 
-type Tab = 'overview' | 'users' | 'skills' | 'reports'
+type Tab = 'overview' | 'users' | 'skills' | 'reports' | 'support'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -24,6 +24,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([])
   const [skills, setSkills] = useState<any[]>([])
   const [reports, setReports] = useState<any[]>([])
+  const [supportRequests, setSupportRequests] = useState<any[]>([])
   const [q, setQ] = useState('')
   const [editing, setEditing] = useState<any>(null)   // user being VIP-edited
 
@@ -42,16 +43,18 @@ export default function AdminPage() {
 
   async function loadAll() {
     const supabase = createClient()
-    const [usersRes, skillsRes, ledgerRes, sessionsRes, reportsRes] = await Promise.all([
+    const [usersRes, skillsRes, ledgerRes, sessionsRes, reportsRes, supportRes] = await Promise.all([
       supabase.from('profiles').select('id, full_name, location, city, country_code, level, xp, tc_available, tc_escrowed, sessions_taught, sessions_taken, is_vip, vip_title, headline_skill, is_admin, consent_research, created_at, signup_order').order('signup_order', { ascending: false }),
       supabase.from('skills').select('*').order('usage_count', { ascending: false }),
       supabase.from('tc_ledger').select('d_available, reason'),
       supabase.from('sessions').select('status, tc_released'),
       supabase.from('user_reports').select('*, reporter:reporter_id(full_name), reported:reported_id(full_name)').order('created_at', { ascending: false }),
+      supabase.from('support_requests').select('*, user:user_id(full_name)').order('created_at', { ascending: false }),
     ])
     setUsers(usersRes.data || [])
     setSkills(skillsRes.data || [])
     setReports(reportsRes.data || [])
+    setSupportRequests(supportRes.data || [])
 
     const u = usersRes.data || []
     const s = skillsRes.data || []
@@ -68,12 +71,20 @@ export default function AdminPage() {
       sessionsCompleted: sess.filter(x => x.status === 'completed').length,
       countries: new Set(u.map(x => x.country_code).filter(Boolean)).size,
       openReports: (reportsRes.data || []).filter((r: any) => r.status === 'open').length,
+      openSupport: (supportRes.data || []).filter((r: any) => r.status === 'open').length,
     })
   }
 
   async function setReportStatus(id: number, status: string) {
     const supabase = createClient()
     const { error } = await supabase.rpc('admin_set_report_status', { p_report_id: id, p_status: status })
+    if (error) { alert(error.message); return }
+    loadAll()
+  }
+
+  async function setSupportStatus(id: string, status: string) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc('admin_set_support_status', { p_request_id: id, p_status: status })
     if (error) { alert(error.message); return }
     loadAll()
   }
@@ -121,6 +132,9 @@ export default function AdminPage() {
   const filteredReports = reports.filter(r => !q
     || (r.reported?.full_name || '').toLowerCase().includes(q.toLowerCase())
     || (r.reporter?.full_name || '').toLowerCase().includes(q.toLowerCase()))
+  const filteredSupport = supportRequests.filter(r => !q
+    || (r.email || '').toLowerCase().includes(q.toLowerCase())
+    || (r.user?.full_name || '').toLowerCase().includes(q.toLowerCase()))
   const CATS = ['Tech', 'Creative', 'Language', 'Business', 'Finance', 'Music', 'Lifestyle', 'Other']
   const REPORT_STATUS = ['open', 'reviewing', 'resolved', 'dismissed']
   const reportStatusColor: Record<string, { bg: string; tx: string }> = {
@@ -128,6 +142,11 @@ export default function AdminPage() {
     reviewing: { bg: '#fff7ed', tx: '#c2410c' },
     resolved:  { bg: 'var(--mint-bg)', tx: 'var(--mint)' },
     dismissed: { bg: 'var(--cream-2)', tx: 'var(--muted)' },
+  }
+  const SUPPORT_STATUS = ['open', 'resolved']
+  const supportStatusColor: Record<string, { bg: string; tx: string }> = {
+    open:     { bg: 'var(--request-bg)', tx: 'var(--rose)' },
+    resolved: { bg: 'var(--mint-bg)', tx: 'var(--mint)' },
   }
 
   return (
@@ -140,7 +159,7 @@ export default function AdminPage() {
 
       {/* tabs */}
       <div className="flex gap-1 p-1 rounded-pill glass mb-5">
-        {(['overview', 'users', 'skills', 'reports'] as Tab[]).map(t => (
+        {(['overview', 'users', 'skills', 'reports', 'support'] as Tab[]).map(t => (
           <button key={t} onClick={() => { setTab(t); setQ('') }}
             className="flex-1 py-2 rounded-pill text-xs font-semibold capitalize transition-all"
             style={tab === t ? { background: 'var(--grad)', color: '#fff' } : { color: 'var(--muted)' }}>
@@ -162,6 +181,7 @@ export default function AdminPage() {
             { label: 'Sessions', val: stats.sessionsTotal, icon: '🎓' },
             { label: 'Completed', val: stats.sessionsCompleted, icon: '✓' },
             { label: 'Open reports', val: stats.openReports, icon: '⚑' },
+            { label: 'Open support requests', val: stats.openSupport, icon: '💬' },
           ].map(s => (
             <div key={s.label} className="glass p-4">
               <div className="text-xl mb-1">{s.icon}</div>
@@ -288,6 +308,46 @@ export default function AdminPage() {
                       className="text-xs font-medium px-3 py-1.5 rounded-pill capitalize"
                       style={{ background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
                       {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* SUPPORT REQUESTS */}
+      {tab === 'support' && (
+        <div className="flex flex-col gap-2">
+          {filteredSupport.length === 0 && (
+            <div className="glass p-6 text-center"><p className="text-sm text-muted">No support requests.</p></div>
+          )}
+          {filteredSupport.map(r => {
+            const c = supportStatusColor[r.status] || supportStatusColor.open
+            const turns = Array.isArray(r.conversation) ? r.conversation : []
+            const preview = turns.find((m: any) => m?.role === 'user')?.content || turns[0]?.content || ''
+            return (
+              <div key={r.id} className="glass p-4">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="text-sm font-semibold text-ink truncate">
+                    💬 {r.email}{r.user?.full_name ? ` · ${r.user.full_name}` : ''}
+                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-pill flex-shrink-0"
+                    style={{ background: c.bg, color: c.tx }}>{r.status}</span>
+                </div>
+                <div className="text-[11px] text-muted font-mono mb-2">
+                  {turns.length} message{turns.length === 1 ? '' : 's'} · {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+                {preview
+                  ? <p className="text-sm text-text mb-3 line-clamp-3">&ldquo;{preview}&rdquo;</p>
+                  : <p className="text-xs text-faint mb-3">No conversation recorded.</p>}
+                <div className="flex gap-1.5 flex-wrap">
+                  {SUPPORT_STATUS.filter(s => s !== r.status).map(s => (
+                    <button key={s} onClick={() => setSupportStatus(r.id, s)}
+                      className="text-xs font-medium px-3 py-1.5 rounded-pill capitalize"
+                      style={{ background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
+                      Mark {s}
                     </button>
                   ))}
                 </div>

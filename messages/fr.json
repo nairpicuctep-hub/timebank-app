@@ -249,6 +249,19 @@
     "endNote": "Quand vous terminez la session, vous notez et confirmez tous les deux. Le TC est libéré une fois que vous confirmez tous les deux.",
     "userFallback": "Utilisateur"
   },
+  "support": {
+    "entryTitle": "Aide & assistance",
+    "entryHint": "Discutez avec notre assistant ou contactez l'équipe",
+    "title": "Aide",
+    "subtitle": "Posez-moi vos questions sur TimeBank Academy",
+    "greeting": "Bonjour ! Je suis l'assistant d'aide de TimeBank Academy. Posez-moi vos questions sur le fonctionnement de l'appli — TimeCredits, réservations, compétences, sécurité, etc. Si je ne peux pas répondre, je transmettrai votre question à l'équipe.",
+    "placeholder": "Posez une question…",
+    "typing": "Je réfléchis…",
+    "genericError": "Un souci est survenu de mon côté — réessayez dans un instant.",
+    "emailPrompt": "Je vais transmettre ceci à l'équipe pour qu'elle puisse vous aider directement. Quelle est la meilleure adresse e-mail pour vous contacter ?",
+    "emailPlaceholder": "vous@exemple.com",
+    "escalatedFallback": "Merci — j'ai transmis ceci à l'équipe. Elle vous répondra par e-mail à {email}."
+  },
   "review": {
     "couldntSubmit": "Échec de l'envoi : {message}",
     "releasedTitle": "TC libéré !",
