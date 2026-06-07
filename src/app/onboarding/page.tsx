@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import SkillPicker from '@/components/SkillPicker'
+import CVImport from '@/components/CVImport'
 import BottomNav from '@/components/layout/BottomNav'
 import { keepCanonicalSlugs } from '@/lib/skills'
 
@@ -67,11 +68,42 @@ export default function OnboardingPage() {
 
   const [loading, setLoading] = useState(false)
 
+  // optional CV-import path for the teach step (alternative to manual search)
+  const [showCvImport, setShowCvImport] = useState(false)
+  const [cvBusy, setCvBusy] = useState(false)
+
   const stepNum = step === 'mirror' ? 1 : step === 'learn' ? 2 : step === 'levels' ? 3 : 4
   const primaryLang = langs[0] || detected
 
   function toggleLang(code: string) {
     setLangs(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code])
+  }
+
+  // Resolve CV-derived skill *names* (free text from Gemini) into canonical
+  // slugs the SAME way SkillPicker's "+ Add" does: through add_skill(), which
+  // dedupes server-side against existing skills and only ever returns a slug
+  // that points at a real `skills` row. The client never derives or guesses a
+  // slug for a skill that's meant to be persisted — this is the same
+  // skill-drift guard `keepCanonicalSlugs`/`normalizeSkillSlug` exist for.
+  async function handleCvConfirm(names: string[], cvLanguages: string[]) {
+    setCvBusy(true)
+    const supabase = createClient()
+    const slugs: string[] = []
+    for (const name of names) {
+      try {
+        const { data, error } = await supabase.rpc('add_skill', { p_name: name, p_language: primaryLang })
+        if (!error && data?.slug) slugs.push(data.slug)
+      } catch { /* skip — never block onboarding on a single bad candidate */ }
+    }
+    if (slugs.length) {
+      setTeachSkills(prev => Array.from(new Set([...prev, ...slugs])))
+    }
+    // soft signal only — merge any clearly-detected, supported languages
+    if (cvLanguages.length) {
+      setLangs(prev => Array.from(new Set([...prev, ...cvLanguages.filter(l => LANGS.some(L => L.code === l))])))
+    }
+    setCvBusy(false)
+    setShowCvImport(false)
   }
 
   async function finish() {
@@ -196,7 +228,19 @@ export default function OnboardingPage() {
             <div className="glass p-4 rise-4">
               <div className="text-sm font-semibold text-ink mb-1">✨ {t('teachQuestion')}</div>
               <p className="text-xs text-muted mb-3">{t('teachSearchHint')}</p>
-              <SkillPicker selected={teachSkills} onChange={setTeachSkills} language={primaryLang} accent="grad" />
+              {showCvImport ? (
+                <>
+                  <CVImport onConfirm={handleCvConfirm} onSkip={() => setShowCvImport(false)} />
+                  {cvBusy && <p className="text-xs text-muted mt-2 text-center">{t('cvImportAdding')}</p>}
+                </>
+              ) : (
+                <>
+                  <SkillPicker selected={teachSkills} onChange={setTeachSkills} language={primaryLang} accent="grad" />
+                  <button onClick={() => setShowCvImport(true)} className="text-xs font-medium grad-text mt-3">
+                    {t('cvImportCta')} →
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

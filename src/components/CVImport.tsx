@@ -131,6 +131,11 @@ export default function CVImport({
       <button onClick={confirm} disabled={selected.size === 0} className="btn-grad w-full py-3 text-sm">
         Add {selected.size} skill{selected.size === 1 ? '' : 's'} →
       </button>
+      {onSkip && (
+        <button onClick={onSkip} className="w-full py-2 mt-1 text-xs text-muted">
+          {candidates.length === 0 ? "Never mind — I'll add skills myself" : 'Skip — none of these fit'}
+        </button>
+      )}
     </div>
   )
 

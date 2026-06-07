@@ -75,6 +75,8 @@
     "mirrorQ3Ph": "e.g. editing photos, debugging code",
     "teachQuestion": "What can you teach?",
     "teachSearchHint": "Search or add anything — a language, a craft, a niche skill.",
+    "cvImportCta": "📄 Got a CV? Import skills from it instead",
+    "cvImportAdding": "Adding your skills…",
     "learnTitle": "What do you want to <grad>learn?</grad>",
     "learnSubtitle": "Search anything. Can't find it? Add it.",
     "proficiencyTitle": "How good are you, <grad>really?</grad>",
