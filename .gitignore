@@ -8,3 +8,5 @@ out/
 .vercel
 package.txt
 structure.txt
+
+tsconfig.tsbuildinfo
