@@ -62,7 +62,7 @@ export default function SessionRoomPage() {
       channel = supabase.channel(`session-${sessionId}`)
         .on('postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'session_messages', filter: `session_id=eq.${sessionId}` },
-          (payload) => setMessages(prev => [...prev, payload.new]))
+          (payload) => setMessages(prev => prev.some(m => m.id === payload.new.id) ? prev : [...prev, payload.new]))
         .subscribe()
     }
     load()
@@ -92,7 +92,12 @@ export default function SessionRoomPage() {
     const supabase = createClient()
     const body = msg.trim()
     setMsg('')
-    await supabase.from('session_messages').insert({ session_id: sessionId, user_id: currentUser.id, body })
+    // optimistically append the returned row so the sender always sees it,
+    // independent of realtime delivery; realtime dedupes by id for the recipient.
+    const { data, error } = await supabase.from('session_messages')
+      .insert({ session_id: sessionId, user_id: currentUser.id, body }).select().single()
+    if (error) { setMsg(body); return }
+    if (data) setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data])
   }
 
   async function endSession() {
