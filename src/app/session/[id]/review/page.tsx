@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/components/ui/Feedback'
 
 /* -------------------------------------------------------------------------
    Review (/session/[id]/review) — light/Bricolage.
@@ -51,7 +52,7 @@ export default function ReviewPage() {
       p_topic: topic || null,
     })
     setSubmitting(false)
-    if (error) { alert(t('couldntSubmit', { message: error.message })); return }
+    if (error) { toast(t('couldntSubmit', { message: error.message }), 'error'); return }
     setBothConfirmed(!!data?.tc_released)
     setDone(true)
   }

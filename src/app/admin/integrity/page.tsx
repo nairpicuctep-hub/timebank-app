@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { toast, showConfirm } from '@/components/ui/Feedback'
 
 /* -------------------------------------------------------------------------
    Integrity review queue (/admin/integrity) — Phase: anti-gaming.
@@ -49,12 +50,12 @@ export default function IntegrityQueuePage() {
   }
 
   async function resolve(id: number, status: 'cleared' | 'confirmed_fraud') {
-    if (status === 'confirmed_fraud' && !confirm('Confirm fraud? This reverses the TC paid for this session.')) return
+    if (status === 'confirmed_fraud' && !await showConfirm('Confirm fraud? This reverses the TC paid for this session.', { danger: true, confirmLabel: 'Confirm fraud' })) return
     setBusy(id)
     const supabase = createClient()
     const { error } = await supabase.rpc('resolve_integrity_flag', { p_flag_id: id, p_status: status })
     setBusy(null)
-    if (error) { alert(error.message); return }
+    if (error) { toast(error.message, 'error'); return }
     load()
   }
 

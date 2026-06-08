@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import SupportChat from '@/components/SupportChat'
+import { toast } from '@/components/ui/Feedback'
 import Link from 'next/link'
 
 /* -------------------------------------------------------------------------
@@ -95,7 +96,7 @@ export default function ProfilePage() {
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', session.user.id)
       setData((prev: any) => ({ ...prev, profile: { ...prev.profile, avatar_url: `${publicUrl}?t=${Date.now()}` } }))
     } else {
-      alert(t('uploadFailed', { message: error.message }))
+      toast(t('uploadFailed', { message: error.message }), 'error')
     }
     setUploading(false)
   }

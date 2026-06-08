@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/components/ui/Feedback'
 
 /* -------------------------------------------------------------------------
    Admin core (/admin) — Phase B.
@@ -78,14 +79,14 @@ export default function AdminPage() {
   async function setReportStatus(id: number, status: string) {
     const supabase = createClient()
     const { error } = await supabase.rpc('admin_set_report_status', { p_report_id: id, p_status: status })
-    if (error) { alert(error.message); return }
+    if (error) { toast(error.message, 'error'); return }
     loadAll()
   }
 
   async function setSupportStatus(id: string, status: string) {
     const supabase = createClient()
     const { error } = await supabase.rpc('admin_set_support_status', { p_request_id: id, p_status: status })
-    if (error) { alert(error.message); return }
+    if (error) { toast(error.message, 'error'); return }
     loadAll()
   }
 
@@ -95,14 +96,14 @@ export default function AdminPage() {
       p_user_id: user.id, p_is_vip: isVip,
       p_vip_title: title ?? user.vip_title, p_headline_skill: headline ?? user.headline_skill,
     })
-    if (error) { alert(error.message); return }
+    if (error) { toast(error.message, 'error'); return }
     setEditing(null); loadAll()
   }
 
   async function setRole(user: any, field: 'is_admin', value: boolean) {
     const supabase = createClient()
     const { error } = await supabase.rpc('admin_set_role', { p_user_id: user.id, p_is_admin: value })
-    if (error) { alert(error.message); return }
+    if (error) { toast(error.message, 'error'); return }
     loadAll()
   }
 
@@ -113,7 +114,7 @@ export default function AdminPage() {
       p_category: patch.category ?? skill.category,
       p_is_approved: patch.is_approved ?? skill.is_approved,
     })
-    if (error) { alert(error.message); return }
+    if (error) { toast(error.message, 'error'); return }
     loadAll()
   }
 

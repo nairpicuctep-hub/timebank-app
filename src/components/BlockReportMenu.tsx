@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { toast, showConfirm } from '@/components/ui/Feedback'
 
 /* -------------------------------------------------------------------------
    BlockReportMenu — small "Options" menu with Block + Report actions.
@@ -31,14 +32,14 @@ export default function BlockReportMenu({
 
   async function block() {
     setOpen(false)
-    if (!confirm(t('blockConfirm', { name }))) return
+    if (!await showConfirm(t('blockConfirm', { name }), { danger: true, confirmLabel: t('block') })) return
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     const { error } = await supabase.from('user_blocks')
       .insert({ blocker_id: session.user.id, blocked_id: targetId })
-    if (error) { alert(t('failed', { message: error.message })); return }
-    alert(t('blockedToast', { name }))
+    if (error) { toast(t('failed', { message: error.message }), 'error'); return }
+    toast(t('blockedToast', { name }), 'success')
     onBlocked?.()
   }
 
@@ -50,9 +51,9 @@ export default function BlockReportMenu({
     const { error } = await supabase.from('user_reports')
       .insert({ reporter_id: session.user.id, reported_id: targetId, reason: reason.trim() || null })
     setBusy(false)
-    if (error) { alert(t('failed', { message: error.message })); return }
+    if (error) { toast(t('failed', { message: error.message }), 'error'); return }
     setReporting(false); setReason('')
-    alert(t('reportThanks'))
+    toast(t('reportThanks'), 'success')
   }
 
   const iconColor = tone === 'dark' ? '#fff' : 'var(--muted)'

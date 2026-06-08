@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
+import { toast } from '@/components/ui/Feedback'
 import Link from 'next/link'
 
 /* -------------------------------------------------------------------------
@@ -37,7 +38,7 @@ export default function AvailabilityPage() {
   }, [router])
 
   async function addSlot() {
-    if (newSlot.end_time <= newSlot.start_time) { alert('End time must be after start time.'); return }
+    if (newSlot.end_time <= newSlot.start_time) { toast('End time must be after start time.', 'error'); return }
     setAdding(true)
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
@@ -47,7 +48,7 @@ export default function AvailabilityPage() {
     if (!error && data) {
       setSlots([...slots, data].sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time)))
     } else if (error) {
-      alert(error.message.includes('duplicate') ? 'You already have a slot at that time.' : error.message)
+      toast(error.message.includes('duplicate') ? 'You already have a slot at that time.' : error.message, 'error')
     }
     setAdding(false)
   }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import CookieConsent from '@/components/CookieConsent'
+import { FeedbackHost } from '@/components/ui/Feedback'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 
@@ -25,6 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider messages={messages}>
           {children}
           <CookieConsent />
+          <FeedbackHost />
         </NextIntlClientProvider>
       </body>
     </html>

@@ -4,6 +4,7 @@
     "back": "Înapoi",
     "save": "Salvează",
     "cancel": "Anulează",
+    "ok": "OK",
     "skip": "Sari peste",
     "next": "Următorul",
     "loading": "Se încarcă…",
@@ -200,7 +201,13 @@
     "decline": "Refuză"
   },
   "days": {
-    "sun": "Dum", "mon": "Lun", "tue": "Mar", "wed": "Mie", "thu": "Joi", "fri": "Vin", "sat": "Sâm"
+    "sun": "Dum",
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mie",
+    "thu": "Joi",
+    "fri": "Vin",
+    "sat": "Sâm"
   },
   "teacher": {
     "notFound": "Profesor negăsit",
@@ -226,7 +233,9 @@
     "bookCta": "Rezervă {day} {time} — 1 TC",
     "couldntBook": "Rezervarea a eșuat: {message}",
     "couldntPing": "Trimiterea ping-ului a eșuat: {message}",
-    "defaultPing": "Ești liber pentru o sesiune în curând?"
+    "defaultPing": "Ești liber pentru o sesiune în curând?",
+    "pingDuplicateTitle": "Cerere deja trimisă",
+    "pingDuplicate": "Ai trimis deja o cerere acestei persoane — așteaptă să răspundă."
   },
   "session": {
     "joining": "Se intră în sesiune…",

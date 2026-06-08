@@ -4,6 +4,7 @@
     "back": "Back",
     "save": "Save",
     "cancel": "Cancel",
+    "ok": "OK",
     "skip": "Skip",
     "next": "Next",
     "loading": "Loading…",
@@ -200,7 +201,13 @@
     "decline": "Decline"
   },
   "days": {
-    "sun": "Sun", "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat"
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat"
   },
   "teacher": {
     "notFound": "Teacher not found",
@@ -226,7 +233,9 @@
     "bookCta": "Book {day} {time} — 1 TC",
     "couldntBook": "Couldn't book: {message}",
     "couldntPing": "Couldn't send ping: {message}",
-    "defaultPing": "Are you free for a session soon?"
+    "defaultPing": "Are you free for a session soon?",
+    "pingDuplicateTitle": "Request already sent",
+    "pingDuplicate": "You've already sent a request to this person — wait for them to respond."
   },
   "session": {
     "joining": "Joining session…",

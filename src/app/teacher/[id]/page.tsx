@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
 import BlockReportMenu from '@/components/BlockReportMenu'
+import { showAlert } from '@/components/ui/Feedback'
 import Link from 'next/link'
 
 /* -------------------------------------------------------------------------
@@ -85,7 +86,7 @@ export default function TeacherPage() {
     })
 
     setBooking(false)
-    if (error) { alert(t('couldntBook', { message: error.message })); return }
+    if (error) { showAlert(t('couldntBook', { message: error.message })); return }
     setBooked(true)
 
     // Fire-and-forget: draft an AI lesson plan for this session (Gemini, server-side).
@@ -113,7 +114,14 @@ export default function TeacherPage() {
       message: pingMsg || t('defaultPing'),
     })
     setPinging(false)
-    if (error) { alert(t('couldntPing', { message: error.message })); return }
+    if (error) {
+      // already have a pending request with this person → friendly, specific message
+      const dup = error.code === '23505' || /duplicate key|one_pending/i.test(error.message || '')
+      setShowPing(false)
+      showAlert(dup ? t('pingDuplicate') : t('couldntPing', { message: error.message }),
+        { title: dup ? t('pingDuplicateTitle') : undefined })
+      return
+    }
     setShowPing(false); setPingSent(true)
   }
 

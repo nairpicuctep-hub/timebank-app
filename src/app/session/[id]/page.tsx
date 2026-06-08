@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { showConfirm } from '@/components/ui/Feedback'
 
 /* -------------------------------------------------------------------------
    Session room (/session/[id]) — light/Bricolage + integrity hooks.
@@ -193,7 +194,7 @@ export default function SessionRoomPage() {
   }
 
   async function endSession() {
-    if (!confirm(t('endConfirm'))) return
+    if (!await showConfirm(t('endConfirm'), { confirmLabel: t('end'), danger: true })) return
     setEnding(true)
     const supabase = createClient()
     await supabase.rpc('complete_session', { p_session_id: sessionId, p_actual_end: new Date().toISOString() })

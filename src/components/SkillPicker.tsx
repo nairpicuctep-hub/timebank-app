@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/components/ui/Feedback'
 
 /* -------------------------------------------------------------------------
    SkillPicker — reusable live skill search + add-new.
@@ -82,7 +83,7 @@ export default function SkillPicker({
     const supabase = createClient()
     const { data, error } = await supabase.rpc('add_skill', { p_name: term, p_language: language })
     setAdding(false)
-    if (error) { alert('Couldn’t add skill: ' + error.message); return }
+    if (error) { toast('Couldn’t add skill: ' + error.message, 'error'); return }
     // add_skill dedupes server-side and inserts the row (is_approved=false) when new.
     // We reference data.slug — the canonical slug from the returned skills row —
     // never a slug derived on the client. This guarantees the selected slug always

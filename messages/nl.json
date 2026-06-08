@@ -4,6 +4,7 @@
     "back": "Terug",
     "save": "Opslaan",
     "cancel": "Annuleren",
+    "ok": "Oké",
     "skip": "Overslaan",
     "next": "Volgende",
     "loading": "Laden…",
@@ -200,7 +201,13 @@
     "decline": "Weigeren"
   },
   "days": {
-    "sun": "zo", "mon": "ma", "tue": "di", "wed": "wo", "thu": "do", "fri": "vr", "sat": "za"
+    "sun": "zo",
+    "mon": "ma",
+    "tue": "di",
+    "wed": "wo",
+    "thu": "do",
+    "fri": "vr",
+    "sat": "za"
   },
   "teacher": {
     "notFound": "Docent niet gevonden",
@@ -226,7 +233,9 @@
     "bookCta": "Boek {day} {time} — 1 TC",
     "couldntBook": "Boeken mislukt: {message}",
     "couldntPing": "Ping versturen mislukt: {message}",
-    "defaultPing": "Heb je binnenkort tijd voor een sessie?"
+    "defaultPing": "Heb je binnenkort tijd voor een sessie?",
+    "pingDuplicateTitle": "Verzoek al verstuurd",
+    "pingDuplicate": "Je hebt deze persoon al een verzoek gestuurd — wacht tot ze reageren."
   },
   "session": {
     "joining": "Deelnemen aan sessie…",

@@ -4,6 +4,7 @@
     "back": "Retour",
     "save": "Enregistrer",
     "cancel": "Annuler",
+    "ok": "OK",
     "skip": "Passer",
     "next": "Suivant",
     "loading": "Chargement…",
@@ -200,7 +201,13 @@
     "decline": "Refuser"
   },
   "days": {
-    "sun": "dim", "mon": "lun", "tue": "mar", "wed": "mer", "thu": "jeu", "fri": "ven", "sat": "sam"
+    "sun": "dim",
+    "mon": "lun",
+    "tue": "mar",
+    "wed": "mer",
+    "thu": "jeu",
+    "fri": "ven",
+    "sat": "sam"
   },
   "teacher": {
     "notFound": "Enseignant introuvable",
@@ -226,7 +233,9 @@
     "bookCta": "Réserver {day} {time} — 1 TC",
     "couldntBook": "Échec de la réservation : {message}",
     "couldntPing": "Échec de l'envoi du ping : {message}",
-    "defaultPing": "Êtes-vous libre pour une session bientôt ?"
+    "defaultPing": "Êtes-vous libre pour une session bientôt ?",
+    "pingDuplicateTitle": "Demande déjà envoyée",
+    "pingDuplicate": "Vous avez déjà envoyé une demande à cette personne — attendez sa réponse."
   },
   "session": {
     "joining": "Connexion à la session…",

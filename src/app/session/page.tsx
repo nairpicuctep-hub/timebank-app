@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/components/ui/Feedback'
 import Link from 'next/link'
 import BottomNav from '@/components/layout/BottomNav'
 
@@ -86,7 +87,7 @@ export default function SessionPage() {
   async function respondPing(id: string, accept: boolean) {
     const supabase = createClient()
     const { error } = await supabase.rpc('respond_to_ping', { p_ping_id: id, p_accept: accept })
-    if (error) { alert(error.message); return }
+    if (error) { toast(error.message, 'error'); return }
     await loadPings(uid)
   }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/components/ui/Feedback'
 
 /* -------------------------------------------------------------------------
    Intel dashboard (/intel) — Phase C + D.
@@ -44,7 +45,7 @@ export default function IntelPage() {
   }, [router])
 
   function exportCSV(name: string, rows: any[]) {
-    if (!rows.length) { alert('No data to export yet.'); return }
+    if (!rows.length) { toast('No data to export yet.'); return }
     const cols = Object.keys(rows[0])
     const csv = [cols.join(','), ...rows.map(r => cols.map(c => JSON.stringify(r[c] ?? '')).join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })

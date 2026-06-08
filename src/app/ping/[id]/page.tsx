@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import BlockReportMenu from '@/components/BlockReportMenu'
+import { toast } from '@/components/ui/Feedback'
 import Link from 'next/link'
 
 /* -------------------------------------------------------------------------
@@ -81,7 +82,7 @@ export default function PingThreadPage() {
     // independent of realtime delivery; realtime dedupes by id for the recipient.
     const { data, error } = await supabase.from('ping_messages')
       .insert({ ping_id: pingId, user_id: me, body }).select().single()
-    if (error) { setMsg(body); alert(error.message); return }
+    if (error) { setMsg(body); toast(error.message, 'error'); return }
     if (data) setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data])
   }
 
