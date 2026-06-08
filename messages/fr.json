@@ -20,6 +20,7 @@
   "nav": {
     "home": "Accueil",
     "explore": "Explorer",
+    "messages": "Messages",
     "mirror": "Miroir",
     "credits": "Crédits",
     "profile": "Profil"
@@ -115,6 +116,26 @@
     "welcomeBalance": "Vous avez <b>{amount} Time Credits</b> pour commencer à apprendre.",
     "welcomeBody": "Enseignez une heure, gagnez-en une. Le temps est votre monnaie.",
     "exploreCta": "Explorer TimeBank"
+  },
+  "mirror": {
+    "title": "Miroir des Compétences",
+    "subtitle": "Répondez à quelques questions et nous suggérerons des compétences à enseigner.",
+    "suggestCta": "Suggérer des compétences à partir de mes réponses",
+    "thinking": "Lecture de vos réponses…",
+    "adding": "Ajout…",
+    "reviewHint": "Touchez pour garder ou retirer. Cela devient des compétences que vous enseignez.",
+    "addCta": "Ajouter {count} compétence{count, plural, one {} other {s}} →",
+    "added": "{count} compétence{count, plural, one {} other {s}} à enseigner ajoutée{count, plural, one {} other {s}}",
+    "none": "Pas encore de compétences claires — ajoutez un peu plus de détails.",
+    "error": "Impossible de lire vos réponses. Vous pouvez ajouter des compétences manuellement.",
+    "saveCta": "Enregistrer dans mes compétences à enseigner",
+    "saved": "Compétences ajoutées à votre profil",
+    "q1": "De quoi pourriez-vous parler une heure sans notes ?",
+    "q1Ph": "ex. comment j'ai appris à cuisiner un vrai risotto",
+    "q2": "Pour quoi vos amis vous demandent-ils toujours de l'aide ?",
+    "q2Ph": "ex. corriger leur CV, accords de guitare…",
+    "q3": "Que faisiez-vous la dernière fois que vous avez perdu la notion du temps ?",
+    "q3Ph": "ex. retoucher des photos, déboguer du code"
   },
   "home": {
     "goodMorning": "Bonjour",

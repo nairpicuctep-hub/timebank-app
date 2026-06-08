@@ -20,6 +20,7 @@
   "nav": {
     "home": "Acasă",
     "explore": "Explorează",
+    "messages": "Mesaje",
     "mirror": "Oglinda",
     "credits": "Credite",
     "profile": "Profil"
@@ -115,6 +116,26 @@
     "welcomeBalance": "Ai <b>{amount} Time Credits</b> ca să începi să înveți.",
     "welcomeBody": "Predă o oră, câștigă una înapoi. Timpul este moneda ta.",
     "exploreCta": "Explorează TimeBank"
+  },
+  "mirror": {
+    "title": "Oglinda Abilităților",
+    "subtitle": "Răspunde la câteva întrebări și îți vom sugera abilități pe care le poți preda.",
+    "suggestCta": "Sugerează abilități din răspunsurile mele",
+    "thinking": "Îți citim răspunsurile…",
+    "adding": "Se adaugă…",
+    "reviewHint": "Atinge pentru a păstra sau elimina. Acestea devin abilități pe care le predai.",
+    "addCta": "Adaugă {count} abilita{count, plural, one {te} other {ți}} →",
+    "added": "{count} abilita{count, plural, one {te} other {ți}} de predat adăugat{count, plural, one {ă} other {e}}",
+    "none": "Încă nicio abilitate clară — adaugă mai multe detalii.",
+    "error": "Nu am putut citi răspunsurile. Poți adăuga abilități manual.",
+    "saveCta": "Salvează la abilitățile mele de predat",
+    "saved": "Abilități adăugate în profilul tău",
+    "q1": "Despre ce ai putea vorbi o oră fără notițe?",
+    "q1Ph": "ex. cum am învățat să gătesc un risotto adevărat",
+    "q2": "Cu ce îți cer mereu ajutorul prietenii?",
+    "q2Ph": "ex. să le corectezi CV-ul, acorduri de chitară…",
+    "q3": "Ce făceai ultima dată când ai pierdut noțiunea timpului?",
+    "q3Ph": "ex. editare de poze, depanare de cod"
   },
   "home": {
     "goodMorning": "Bună dimineața",

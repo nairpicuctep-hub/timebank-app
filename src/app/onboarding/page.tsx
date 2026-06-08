@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import SkillPicker from '@/components/SkillPicker'
 import CVImport from '@/components/CVImport'
+import MirrorSuggestions from '@/components/MirrorSuggestions'
 import BottomNav from '@/components/layout/BottomNav'
 import { keepCanonicalSlugs } from '@/lib/skills'
 
@@ -236,6 +237,15 @@ export default function OnboardingPage() {
               ) : (
                 <>
                   <SkillPicker selected={teachSkills} onChange={setTeachSkills} language={primaryLang} accent="grad" />
+                  {/* FEATURE 6: turn the reflective answers above into teachable skills */}
+                  <div className="mt-3">
+                    <MirrorSuggestions
+                      answers={{ topic: mirror.topic, friends_ask: mirror.friends_ask, flow: mirror.flow }}
+                      language={primaryLang}
+                      alreadySelected={teachSkills}
+                      onAddSlugs={(slugs) => setTeachSkills(prev => Array.from(new Set([...prev, ...slugs])))}
+                    />
+                  </div>
                   <button onClick={() => setShowCvImport(true)} className="text-xs font-medium grad-text mt-3">
                     {t('cvImportCta')} →
                   </button>

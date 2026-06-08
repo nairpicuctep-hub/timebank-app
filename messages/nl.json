@@ -20,6 +20,7 @@
   "nav": {
     "home": "Start",
     "explore": "Ontdek",
+    "messages": "Berichten",
     "mirror": "Spiegel",
     "credits": "Credits",
     "profile": "Profiel"
@@ -115,6 +116,26 @@
     "welcomeBalance": "Je hebt <b>{amount} Time Credits</b> om te beginnen met leren.",
     "welcomeBody": "Geef een uur les, verdien er een terug. Tijd is je valuta.",
     "exploreCta": "Ontdek TimeBank"
+  },
+  "mirror": {
+    "title": "Vaardigheidsspiegel",
+    "subtitle": "Beantwoord een paar vragen en we stellen vaardigheden voor die je kunt lesgeven.",
+    "suggestCta": "Stel vaardigheden voor op basis van mijn antwoorden",
+    "thinking": "Je antwoorden lezen…",
+    "adding": "Toevoegen…",
+    "reviewHint": "Tik om te behouden of te verwijderen. Dit worden vaardigheden die je lesgeeft.",
+    "addCta": "{count} vaardigheid{count, plural, one {} other {en}} toevoegen →",
+    "added": "{count} lesvaardigheid{count, plural, one {} other {en}} toegevoegd",
+    "none": "Nog geen duidelijke vaardigheden — voeg wat meer detail toe.",
+    "error": "Kon je antwoorden niet lezen. Je kunt vaardigheden handmatig toevoegen.",
+    "saveCta": "Opslaan bij mijn lesvaardigheden",
+    "saved": "Vaardigheden toegevoegd aan je profiel",
+    "q1": "Waarover zou je een uur kunnen praten zonder notities?",
+    "q1Ph": "bijv. hoe ik echte risotto leerde koken",
+    "q2": "Waar vragen vrienden je altijd om hulp bij?",
+    "q2Ph": "bijv. hun cv verbeteren, gitaarakkoorden…",
+    "q3": "Wat deed je de laatste keer dat je de tijd vergat?",
+    "q3Ph": "bijv. fotos bewerken, code debuggen"
   },
   "home": {
     "goodMorning": "Goedemorgen",

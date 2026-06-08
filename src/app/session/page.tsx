@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense, type ReactNode } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from '@/components/ui/Feedback'
@@ -47,13 +47,16 @@ const STATUS_KEY: Record<string, string> = {
   completed: 'statusCompleted', cancelled: 'statusCancelled',
 }
 
-export default function SessionPage() {
+function SessionPageInner() {
   const t = useTranslations('explore')
   const tc = useTranslations('common')
   const tnav = useTranslations('nav')
   const tcat = useTranslations('categories')
   const tping = useTranslations('ping')
-  const [tab, setTab] = useState<'browse' | 'sessions' | 'pings'>('browse')
+  const searchParams = useSearchParams()
+  const initialTab = searchParams.get('tab') === 'pings' ? 'pings'
+    : searchParams.get('tab') === 'sessions' ? 'sessions' : 'browse'
+  const [tab, setTab] = useState<'browse' | 'sessions' | 'pings'>(initialTab)
   const [teachers, setTeachers] = useState<any[]>([])
   const [mySessions, setMySessions] = useState<any[]>([])
   const [pings, setPings] = useState<any[]>([])       // incoming pending requests
@@ -341,7 +344,15 @@ export default function SessionPage() {
         </div>
       )}
 
-      <BottomNav active="session" />
+      <BottomNav active={tab === 'pings' ? 'messages' : 'session'} />
     </div>
+  )
+}
+
+export default function SessionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p className="text-sm font-mono text-muted">…</p></div>}>
+      <SessionPageInner />
+    </Suspense>
   )
 }

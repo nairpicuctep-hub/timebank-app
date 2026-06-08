@@ -6,15 +6,17 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 
 /* Light BottomNav — warm glass bar, active tab in a gradient pill.
-   Routes kept identical to the existing app so no links break.
-   Shows a red unread dot on Explore when the user has pending ping requests. */
+   FEATURE 7: center slot is Messages (pings + chat + notifications) instead of
+   the Skill Mirror, which moved under Profile (/mirror). The red unread dot now
+   lives on Messages. Explore and Messages are two views of /session (browse vs
+   pings tab) — /session passes the matching `active` key based on its tab. */
 
 const NAV = [
-  { href: '/home',       key: 'home',    icon: '⌂', tkey: 'home'    },
-  { href: '/session',    key: 'session', icon: '◎', tkey: 'explore' },
-  { href: '/onboarding', key: 'mirror',  icon: '✦', tkey: 'mirror'  },
-  { href: '/wallet',     key: 'wallet',  icon: '◈', tkey: 'credits' },
-  { href: '/profile',    key: 'profile', icon: '○', tkey: 'profile' },
+  { href: '/home',              key: 'home',     icon: '⌂', tkey: 'home'     },
+  { href: '/session',           key: 'session',  icon: '◎', tkey: 'explore'  },
+  { href: '/session?tab=pings', key: 'messages', icon: '✉', tkey: 'messages' },
+  { href: '/wallet',            key: 'wallet',   icon: '◈', tkey: 'credits'  },
+  { href: '/profile',           key: 'profile',  icon: '○', tkey: 'profile'  },
 ]
 
 export default function BottomNav({ active }: { active: string }) {
@@ -48,8 +50,8 @@ export default function BottomNav({ active }: { active: string }) {
       }}>
       {NAV.map(({ href, key, icon, tkey }) => {
         const isActive = active === key
-        // pings live under Explore — surface the unread dot there
-        const showDot = key === 'session' && pendingPings > 0
+        // pings live under Messages — surface the unread dot there
+        const showDot = key === 'messages' && pendingPings > 0
         return (
           <Link key={href} href={href}>
             <div className="relative flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all"

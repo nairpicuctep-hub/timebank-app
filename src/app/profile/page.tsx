@@ -44,6 +44,7 @@ export default function ProfilePage() {
   const tl = useTranslations('levels')
   const tprof = useTranslations('proficiency')
   const tsupport = useTranslations('support')
+  const tmirror = useTranslations('mirror')
   const tbadge = useTranslations('badges')
   const [data, setData] = useState<any>(null)
   const [badges, setBadges] = useState<any[]>([])
@@ -264,6 +265,16 @@ export default function ProfilePage() {
           <div className="flex-1">
             <div className="text-sm font-semibold text-ink">{t('manageAvailability')}</div>
             <div className="text-xs text-muted">{t('manageAvailabilityHint')}</div>
+          </div>
+          <span className="text-muted">→</span>
+        </Link>
+
+        {/* skill mirror — profile-building tool (moved here from bottom nav) */}
+        <Link href="/mirror" className="glass p-4 flex items-center gap-3">
+          <span className="text-xl">✦</span>
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-ink">{tmirror('title')}</div>
+            <div className="text-xs text-muted">{tmirror('subtitle')}</div>
           </div>
           <span className="text-muted">→</span>
         </Link>

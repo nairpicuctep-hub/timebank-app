@@ -20,6 +20,7 @@
   "nav": {
     "home": "Home",
     "explore": "Explore",
+    "messages": "Messages",
     "mirror": "Mirror",
     "credits": "Credits",
     "profile": "Profile"
@@ -115,6 +116,26 @@
     "welcomeBalance": "You've got <b>{amount} Time Credits</b> to start learning.",
     "welcomeBody": "Teach an hour, earn one back. Time is your currency.",
     "exploreCta": "Explore TimeBank"
+  },
+  "mirror": {
+    "title": "Skill Mirror",
+    "subtitle": "Answer a few questions and we'll suggest skills you can teach.",
+    "suggestCta": "Suggest skills from my answers",
+    "thinking": "Reading your answers…",
+    "adding": "Adding…",
+    "reviewHint": "Tap to keep or drop. These become skills you teach.",
+    "addCta": "Add {count} skill{count, plural, one {} other {s}} →",
+    "added": "Added {count} skill{count, plural, one {} other {s}} to teach",
+    "none": "No clear skills yet — try adding a little more detail.",
+    "error": "Couldn't read your answers. You can add skills manually.",
+    "saveCta": "Save to my teaching skills",
+    "saved": "Skills added to your profile",
+    "q1": "What could you talk about for an hour without notes?",
+    "q1Ph": "e.g. how I learned to cook a proper risotto",
+    "q2": "What do friends always ask you for help with?",
+    "q2Ph": "e.g. fixing their CV, guitar chords…",
+    "q3": "What were you doing last time you lost track of time?",
+    "q3Ph": "e.g. editing photos, debugging code"
   },
   "home": {
     "goodMorning": "Good morning",
