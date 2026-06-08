@@ -10,3 +10,8 @@ package.txt
 structure.txt
 
 tsconfig.tsbuildinfo
+
+# JaaS / 8x8 signing keys — NEVER commit. Private key lives in JAAS_PRIVATE_KEY env.
+Key*.pk
+Key*.pub
+*.pem

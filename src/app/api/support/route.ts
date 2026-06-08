@@ -59,19 +59,19 @@ export async function POST(req: NextRequest) {
       .map((m: any) => ({ role: m.role as 'user' | 'assistant', content: String(m.content).trim().slice(0, 4000) }))
 
     const supabase = createClient()
-    const { data: { session: auth } } = await supabase.auth.getSession()
+    const { data: { user: auth } } = await supabase.auth.getUser()
     if (!auth) return NextResponse.json({ error: 'Please sign in to use Help.' }, { status: 401 })
 
     /* ---- branch 1: finalize an escalation — insert, email, fixed reply ---- */
     if (body?.finalizeEscalation) {
-      const email = String(body?.email || auth.user.email || '').trim().toLowerCase()
+      const email = String(body?.email || auth.email || '').trim().toLowerCase()
       if (!isValidEmail(email)) {
         return NextResponse.json({ error: 'A valid email address is needed to reach you.' }, { status: 400 })
       }
 
       // (b) insert FIRST — nothing is lost if the email send below fails
       const { data: row, error: insErr } = await supabase.from('support_requests')
-        .insert({ user_id: auth.user.id, email, conversation: turns, status: 'open' })
+        .insert({ user_id: auth.id, email, conversation: turns, status: 'open' })
         .select('id').single()
       if (insErr) {
         console.error('support_requests insert error', insErr)
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       const transcript = turns.map(m => `${m.role === 'user' ? 'User' : 'Agent'}: ${m.content}`).join('\n')
       const html = `
         <p><strong>New support escalation</strong> (request <code>${row?.id || ''}</code>)</p>
-        <p><strong>From:</strong> ${escapeHtml(email)} (user ${auth.user.id})</p>
+        <p><strong>From:</strong> ${escapeHtml(email)} (user ${auth.id})</p>
         <hr/>
         <pre style="white-space:pre-wrap;font-family:inherit;font-size:13px">${escapeHtml(transcript)}</pre>
       `.trim()

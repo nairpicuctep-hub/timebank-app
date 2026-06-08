@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createClient()
-    const { data: { session: auth } } = await supabase.auth.getSession()
-    if (!auth) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
+    const { data: { user }, error: authErr } = await supabase.auth.getUser()
+    if (authErr || !user) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
 
     const { data: s } = await supabase.from('sessions')
       .select('id, learner_id, skill_id, duration_min, skill:skill_id(name, category)')

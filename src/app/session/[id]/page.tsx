@@ -15,6 +15,23 @@ import { createClient } from '@/lib/supabase/client'
    • End → complete_session → /review
    ------------------------------------------------------------------------- */
 
+// Load the JaaS external_api.js once (per App ID) and resolve when the global is ready.
+let jaasScriptPromise: Promise<void> | null = null
+function loadJaasScript(appId: string): Promise<void> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('no window'))
+  if ((window as any).JitsiMeetExternalAPI) return Promise.resolve()
+  if (jaasScriptPromise) return jaasScriptPromise
+  jaasScriptPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script')
+    s.src = `https://8x8.vc/${appId}/external_api.js`
+    s.async = true
+    s.onload = () => resolve()
+    s.onerror = () => { jaasScriptPromise = null; reject(new Error('Failed to load video library')) }
+    document.body.appendChild(s)
+  })
+  return jaasScriptPromise
+}
+
 export default function SessionRoomPage() {
   const t = useTranslations('session')
   const tc = useTranslations('common')
@@ -32,7 +49,10 @@ export default function SessionRoomPage() {
   const [planError, setPlanError] = useState('')
   const [elapsed, setElapsed] = useState(0)
   const [ending, setEnding] = useState(false)
+  const [videoError, setVideoError] = useState('')
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const jitsiBoxRef = useRef<HTMLDivElement>(null)
+  const jitsiApiRef = useRef<any>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -81,6 +101,54 @@ export default function SessionRoomPage() {
     }, 30000)
     return () => clearInterval(beat)
   }, [sessionId])
+
+  // JaaS (8x8.vc) video embed — mint a server-signed JWT, then join as moderator.
+  useEffect(() => {
+    if (!session || !currentUser) return
+    let disposed = false
+
+    async function startVideo() {
+      try {
+        const res = await fetch('/api/jaas-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok || !json.jwt) throw new Error(json?.error || 'Could not start video.')
+        await loadJaasScript(json.appId)
+        if (disposed || !jitsiBoxRef.current) return
+
+        const JitsiMeetExternalAPI = (window as any).JitsiMeetExternalAPI
+        if (!JitsiMeetExternalAPI) throw new Error('Video library unavailable.')
+
+        jitsiApiRef.current = new JitsiMeetExternalAPI('8x8.vc', {
+          roomName: json.room,
+          jwt: json.jwt,
+          parentNode: jitsiBoxRef.current,
+          configOverwrite: {
+            prejoinPageEnabled: false,
+            disableDeepLinking: true,
+            startWithAudioMuted: false,
+            startWithVideoMuted: false,
+          },
+          interfaceConfigOverwrite: {
+            SHOW_JITSI_WATERMARK: false,
+            SHOW_CHROME_EXTENSION_BANNER: false,
+          },
+        })
+      } catch (e: any) {
+        if (!disposed) setVideoError(e?.message || 'Could not start the video room.')
+      }
+    }
+    startVideo()
+
+    return () => {
+      disposed = true
+      try { jitsiApiRef.current?.dispose?.() } catch {}
+      jitsiApiRef.current = null
+    }
+  }, [session, currentUser, sessionId])
 
   useEffect(() => {
     const timer = setInterval(() => setElapsed(e => e + 1), 1000)
@@ -137,9 +205,6 @@ export default function SessionRoomPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-sm font-mono text-muted">{t('joining')}</p></div>
   if (!session) return <div className="min-h-screen flex items-center justify-center"><p className="text-sm text-muted">{t('notFound')}</p></div>
 
-  const room = session.daily_room_name ? `timebank-${session.daily_room_name}` : `timebank-${String(sessionId).slice(0, 12)}`
-  const jitsiUrl = `https://meet.jit.si/${room}#userInfo.displayName="${encodeURIComponent(currentUser?.email || t('userFallback'))}"&config.prejoinPageEnabled=false&interfaceConfig.SHOW_JITSI_WATERMARK=false`
-
   return (
     <div className="flex flex-col" style={{ height: '100dvh', background: 'var(--cream-1)' }}>
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 glass" style={{ borderRadius: 0 }}>
@@ -158,7 +223,12 @@ export default function SessionRoomPage() {
 
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
         <div className="flex-1 relative" style={{ background: '#0a0806', minHeight: 220 }}>
-          <iframe src={jitsiUrl} allow="camera; microphone; fullscreen; display-capture" className="w-full h-full border-0" />
+          <div ref={jitsiBoxRef} className="w-full h-full" />
+          {videoError && (
+            <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+              <p className="text-sm text-white/80 max-w-xs">{videoError}</p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col flex-shrink-0 glass md:w-80" style={{ borderRadius: 0, borderLeft: '1px solid var(--line-2)' }}>
