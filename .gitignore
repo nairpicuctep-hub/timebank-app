@@ -15,3 +15,6 @@ tsconfig.tsbuildinfo
 Key*.pk
 Key*.pub
 *.pem
+
+# pdf.js worker — copied from node_modules by scripts/copy-pdf-worker.mjs (version-matched)
+public/pdf.worker.min.mjs

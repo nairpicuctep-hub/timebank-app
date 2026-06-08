@@ -36,8 +36,10 @@ export default function CVImport({
 
     if (ext === 'pdf') {
       const pdfjs = await import('pdfjs-dist')
-      // @ts-ignore - worker
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`
+      // Same-origin, version-matched worker copied into /public by
+      // scripts/copy-pdf-worker.mjs. (cdnjs doesn't host every pdfjs-dist
+      // version — pointing there 404s with "Setting up fake worker failed".)
+      pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
       const buf = await file.arrayBuffer()
       const pdf = await pdfjs.getDocument({ data: buf }).promise
       let text = ''
