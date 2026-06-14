@@ -279,7 +279,11 @@
     "cost": "Cost",
     "costValue": "{cost} TC · {duration} min",
     "endNote": "When you end the session, you'll both rate and confirm. The TC releases once both confirm.",
-    "userFallback": "User"
+    "userFallback": "User",
+    "joinTitle": "Ready to join?",
+    "joinHint": "Tap to turn on your camera and microphone for this session.",
+    "joinCta": "Join session",
+    "avDenied": "Camera and microphone are blocked. On iPhone: Settings → Apps → Safari → Camera & Microphone → Allow, then reload this page."
   },
   "support": {
     "entryTitle": "Help & support",

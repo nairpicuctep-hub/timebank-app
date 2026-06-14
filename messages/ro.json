@@ -279,7 +279,11 @@
     "cost": "Cost",
     "costValue": "{cost} TC · {duration} min",
     "endNote": "Când închei sesiunea, veți evalua și confirma amândoi. TC-ul se eliberează după ce confirmați amândoi.",
-    "userFallback": "Utilizator"
+    "userFallback": "Utilizator",
+    "joinTitle": "Gata să intri?",
+    "joinHint": "Atinge pentru a activa camera și microfonul pentru această sesiune.",
+    "joinCta": "Intră în sesiune",
+    "avDenied": "Camera și microfonul sunt blocate. Pe iPhone: Setări → Aplicații → Safari → Cameră și microfon → Permite, apoi reîncarcă pagina."
   },
   "support": {
     "entryTitle": "Ajutor & asistență",

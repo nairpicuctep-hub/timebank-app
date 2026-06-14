@@ -51,6 +51,11 @@ export default function SessionRoomPage() {
   const [elapsed, setElapsed] = useState(0)
   const [ending, setEnding] = useState(false)
   const [videoError, setVideoError] = useState('')
+  // iOS Safari needs the AV permission prompt + Jitsi join to fire from a user
+  // tap, not on mount — so video joining is gated behind an explicit button.
+  const [joined, setJoined] = useState(false)
+  const [joining, setJoining] = useState(false)
+  const [avError, setAvError] = useState('')
   const chatEndRef = useRef<HTMLDivElement>(null)
   const jitsiBoxRef = useRef<HTMLDivElement>(null)
   const jitsiApiRef = useRef<any>(null)
@@ -103,9 +108,10 @@ export default function SessionRoomPage() {
     return () => clearInterval(beat)
   }, [sessionId])
 
-  // JaaS (8x8.vc) video embed — mint a server-signed JWT, then join as moderator.
+  // JaaS (8x8.vc) video embed — only after the user taps Join (iOS gesture
+  // requirement). Mints a server-signed JWT, then joins as moderator.
   useEffect(() => {
-    if (!session || !currentUser) return
+    if (!joined || !session || !currentUser) return
     let disposed = false
 
     async function startVideo() {
@@ -138,6 +144,19 @@ export default function SessionRoomPage() {
             SHOW_CHROME_EXTENSION_BANNER: false,
           },
         })
+
+        // Ensure the generated iframe delegates camera/mic/etc. to the 8x8.vc
+        // origin — without this, getUserMedia inside the cross-origin iframe is
+        // blocked (the silent failure on iOS Safari). Merge, never drop tokens.
+        const iframe: HTMLIFrameElement | undefined = jitsiApiRef.current?.getIFrame?.()
+        if (iframe) {
+          const want = ['camera', 'microphone', 'display-capture', 'autoplay', 'clipboard-write', 'fullscreen']
+          const existing = (iframe.getAttribute('allow') || '').split(';').map(s => s.trim()).filter(Boolean)
+          const merged = Array.from(new Set([...existing, ...want]))
+          iframe.setAttribute('allow', merged.join('; '))
+          iframe.setAttribute('allowfullscreen', 'true')
+          ;(iframe as any).allowFullscreen = true
+        }
       } catch (e: any) {
         if (!disposed) setVideoError(e?.message || 'Could not start the video room.')
       }
@@ -149,7 +168,7 @@ export default function SessionRoomPage() {
       try { jitsiApiRef.current?.dispose?.() } catch {}
       jitsiApiRef.current = null
     }
-  }, [session, currentUser, sessionId])
+  }, [joined, session, currentUser, sessionId])
 
   useEffect(() => {
     const timer = setInterval(() => setElapsed(e => e + 1), 1000)
@@ -193,6 +212,25 @@ export default function SessionRoomPage() {
     }
   }
 
+  // Pre-flight the native AV prompt from the user's tap (iOS requires this to
+  // happen in a user gesture), then mount the Jitsi embed. We stop the probe
+  // tracks immediately — Jitsi re-acquires them inside the (now-permitted) iframe.
+  async function joinNow() {
+    if (joining || joined) return
+    setJoining(true)
+    setAvError('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      stream.getTracks().forEach(tr => tr.stop())
+    } catch (e: any) {
+      // denied / no device — surface guidance, but still let them into the room
+      // (they can use chat / see the other person and re-enable AV in Settings)
+      setAvError(t('avDenied'))
+    }
+    setJoined(true)
+    setJoining(false)
+  }
+
   async function endSession() {
     if (!await showConfirm(t('endConfirm'), { confirmLabel: t('end'), danger: true })) return
     setEnding(true)
@@ -225,6 +263,29 @@ export default function SessionRoomPage() {
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
         <div className="flex-1 relative" style={{ background: '#0a0806', minHeight: 220 }}>
           <div ref={jitsiBoxRef} className="w-full h-full" />
+
+          {/* Pre-join gate — the Join tap is what unlocks AV on iOS Safari */}
+          {!joined && !videoError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center gap-4">
+              <div className="text-4xl">🎥</div>
+              <div>
+                <p className="text-base font-semibold text-white">{t('joinTitle')}</p>
+                <p className="text-sm text-white/70 mt-1 max-w-xs">{t('joinHint')}</p>
+              </div>
+              {avError && <p className="text-sm max-w-xs" style={{ color: '#fda4af' }}>{avError}</p>}
+              <button onClick={joinNow} disabled={joining} className="btn-grad px-6 py-3 text-sm">
+                {joining ? t('joining') : t('joinCta')}
+              </button>
+            </div>
+          )}
+
+          {/* AV denied but the user chose to continue — persistent re-enable hint */}
+          {joined && avError && (
+            <div className="absolute top-0 left-0 right-0 p-2 text-center" style={{ background: 'rgba(190,18,60,0.92)' }}>
+              <p className="text-xs text-white">{avError}</p>
+            </div>
+          )}
+
           {videoError && (
             <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
               <p className="text-sm text-white/80 max-w-xs">{videoError}</p>

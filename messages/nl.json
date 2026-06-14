@@ -279,7 +279,11 @@
     "cost": "Kosten",
     "costValue": "{cost} TC · {duration} min",
     "endNote": "Wanneer je de sessie beëindigt, beoordelen en bevestigen jullie beiden. De TC komt vrij zodra jullie beiden bevestigen.",
-    "userFallback": "Gebruiker"
+    "userFallback": "Gebruiker",
+    "joinTitle": "Klaar om deel te nemen?",
+    "joinHint": "Tik om je camera en microfoon voor deze sessie in te schakelen.",
+    "joinCta": "Deelnemen",
+    "avDenied": "Camera en microfoon zijn geblokkeerd. Op iPhone: Instellingen → Apps → Safari → Camera & Microfoon → Sta toe, en herlaad deze pagina."
   },
   "support": {
     "entryTitle": "Hulp & ondersteuning",

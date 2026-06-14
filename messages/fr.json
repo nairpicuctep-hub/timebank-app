@@ -279,7 +279,11 @@
     "cost": "Coût",
     "costValue": "{cost} TC · {duration} min",
     "endNote": "Quand vous terminez la session, vous notez et confirmez tous les deux. Le TC est libéré une fois que vous confirmez tous les deux.",
-    "userFallback": "Utilisateur"
+    "userFallback": "Utilisateur",
+    "joinTitle": "Prêt à rejoindre ?",
+    "joinHint": "Touchez pour activer votre caméra et votre micro pour cette session.",
+    "joinCta": "Rejoindre la session",
+    "avDenied": "Caméra et micro bloqués. Sur iPhone : Réglages → Apps → Safari → Caméra et micro → Autoriser, puis rechargez la page."
   },
   "support": {
     "entryTitle": "Aide & assistance",
