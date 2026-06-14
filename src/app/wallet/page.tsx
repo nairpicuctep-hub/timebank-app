@@ -118,8 +118,8 @@ export default function WalletPage() {
       <div className="glass p-4 mb-5 flex items-center gap-3" style={{ border: '1px solid var(--tc-bd)' }}>
         <div className="text-2xl">✦</div>
         <div className="flex-1">
-          <div className="text-sm font-semibold text-ink">{t('goPremium')}</div>
-          <div className="text-xs text-muted">{t('premiumPitch')}</div>
+          <div className="text-sm font-semibold text-ink">{t('freeForever')}</div>
+          <div className="text-xs text-muted">{t('freePitch')}</div>
         </div>
       </div>
 
