@@ -4,6 +4,7 @@ import CookieConsent from '@/components/CookieConsent'
 import { FeedbackHost } from '@/components/ui/Feedback'
 import AppSplash from '@/components/AppSplash'
 import PWARegister from '@/components/PWARegister'
+import AppFrame from '@/components/layout/AppFrame'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 
@@ -38,7 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <body className="relative z-10">
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <AppFrame>{children}</AppFrame>
           <CookieConsent />
           <FeedbackHost />
           <AppSplash />

@@ -96,10 +96,13 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
         </div>
       </div>
 
-      <div className="px-5 pt-4 flex flex-col gap-4">
+      <div className="px-5 pt-4 flex flex-col gap-4 lg:grid lg:grid-cols-[1.7fr_1fr] lg:gap-5 lg:items-start">
+
+        {/* PRIMARY COLUMN — desktop col 1; the single, unchanged column on mobile */}
+        <div className="flex flex-col gap-4 lg:gap-5 min-w-0">
 
         {/* TC BALANCE HERO */}
-        <div id="tour-balance" className="grad-card rise p-5">
+        <div id="tour-balance" className="grad-card rise p-5 lg:rounded-[20px]">
           <div className="blob blob-1" /><div className="blob blob-2" />
           <div className="flex items-center gap-2 text-[13px] font-medium relative" style={{ opacity: 0.95 }}>
             ◎ {t('timeCredits')}
@@ -163,8 +166,8 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
           </div>
         </div>
 
-        {/* VIP MASTERS SHOWCASE — renders only if VIPs exist */}
-        <MastersStrip learnSkills={profile?.learn_skills || []} />
+        {/* VIP MASTERS — mobile position (on desktop it moves to the aside) */}
+        <MastersStrip className="lg:hidden" learnSkills={profile?.learn_skills || []} />
 
         {/* COLD START vs POPULATED */}
         {isColdStart ? (
@@ -298,6 +301,12 @@ export default function HomeClient({ profile, balance, nextSession, teachers, ui
             </div>
           </>
         )}
+        </div>{/* /PRIMARY COLUMN */}
+
+        {/* ASIDE — desktop only: "Masters you'll want to meet" as a vertical list */}
+        <aside className="hidden lg:flex lg:flex-col lg:gap-5 lg:sticky lg:top-4">
+          <MastersStrip vertical learnSkills={profile?.learn_skills || []} />
+        </aside>
       </div>
 
       <Coachmark steps={[

@@ -1,54 +1,27 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
+import { NAV_ITEMS } from './navItems'
+import { usePendingPings } from './usePendingPings'
 
 /* Light BottomNav — warm glass bar, active tab in a gradient pill.
-   FEATURE 7: center slot is Messages (pings + chat + notifications) instead of
-   the Skill Mirror, which moved under Profile (/mirror). The red unread dot now
-   lives on Messages. Explore and Messages are two views of /session (browse vs
-   pings tab) — /session passes the matching `active` key based on its tab. */
-
-const NAV = [
-  { href: '/home',              key: 'home',     icon: '⌂', tkey: 'home'     },
-  { href: '/session',           key: 'session',  icon: '◎', tkey: 'explore'  },
-  { href: '/session?tab=pings', key: 'messages', icon: '✉', tkey: 'messages' },
-  { href: '/wallet',            key: 'wallet',   icon: '◈', tkey: 'credits'  },
-  { href: '/profile',           key: 'profile',  icon: '○', tkey: 'profile'  },
-]
+   Mobile only: hidden at lg+ where SidebarNav takes over. Route list +
+   active state are unchanged; routes come from the shared navItems module. */
 
 export default function BottomNav({ active }: { active: string }) {
   const t = useTranslations('nav')
-  const [pendingPings, setPendingPings] = useState(0)
-
-  useEffect(() => {
-    const supabase = createClient()
-    let cancelled = false
-    async function loadCount() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const { count } = await supabase
-        .from('session_pings')
-        .select('id', { count: 'exact', head: true })
-        .eq('to_user', session.user.id)
-        .eq('status', 'pending')
-      if (!cancelled) setPendingPings(count || 0)
-    }
-    loadCount()
-    return () => { cancelled = true }
-  }, [])
+  const pendingPings = usePendingPings()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-3 pt-3 pb-6"
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-3 pt-3 pb-6"
       style={{
         background: 'rgba(255,252,248,0.82)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid var(--line-2)',
       }}>
-      {NAV.map(({ href, key, icon, tkey }) => {
+      {NAV_ITEMS.map(({ href, key, icon, tkey }) => {
         const isActive = active === key
         // pings live under Messages — surface the unread dot there
         const showDot = key === 'messages' && pendingPings > 0

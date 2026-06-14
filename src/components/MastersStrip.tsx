@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/client'
 
 const RING = 'linear-gradient(135deg,#F0A830,#E85030,#D03878)'
 
-export default function MastersStrip({ learnSkills = [] }: { learnSkills?: string[] }) {
+export default function MastersStrip({ learnSkills = [], vertical = false, className = '' }: { learnSkills?: string[]; vertical?: boolean; className?: string }) {
   const [masters, setMasters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -40,13 +40,13 @@ export default function MastersStrip({ learnSkills = [] }: { learnSkills?: strin
   const learnSet = new Set(learnSkills)
 
   return (
-    <div className="rise-2">
+    <div className={`rise-2 ${className}`}>
       <div className="flex items-center justify-between mb-2.5">
         <h3 className="font-display font-semibold text-[17px] text-ink">Masters you&apos;ll want to meet</h3>
         <span className="text-[10px] font-mono uppercase tracking-widest text-faint">Verified</span>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+      <div className={vertical ? 'flex flex-col gap-3' : 'flex gap-3 overflow-x-auto pb-1 no-scrollbar'}>
         {masters.map(m => {
           // find a teach-skill that's on the viewer's learn list
           const match = (m.teach_skills || []).find((s: string) => learnSet.has(s))
@@ -55,7 +55,7 @@ export default function MastersStrip({ learnSkills = [] }: { learnSkills?: strin
             : (m.headline_skill ? `Master of ${m.headline_skill}` : (m.vip_title || 'Verified Master'))
 
           return (
-            <Link href={`/teacher/${m.id}`} key={m.id} className="flex-shrink-0" style={{ width: 168 }}>
+            <Link href={`/teacher/${m.id}`} key={m.id} className="flex-shrink-0" style={{ width: vertical ? '100%' : 168 }}>
               <div className="glass overflow-hidden" style={{ height: '100%' }}>
                 {/* avatar with gradient ring */}
                 <div className="flex flex-col items-center pt-4 px-3">
