@@ -298,16 +298,13 @@ export default function ProfilePage() {
           <LanguageSwitcher compact />
         </div>
 
-        {/* tier + sign out */}
+        {/* plan — free for individuals, forever */}
         <div className="glass p-4 flex items-center gap-3">
-          <span className="text-xs font-mono px-2.5 py-1 rounded-pill capitalize"
+          <span className="text-xs font-mono px-2.5 py-1 rounded-pill"
             style={{ background: 'var(--tc-bg)', border: '1px solid var(--tc-bd)', color: 'var(--tc-tx)' }}>
-            {profile?.tier || 'free'}
+            {t('planBadge')}
           </span>
-          <span className="text-xs text-muted flex-1">
-            {profile?.tier === 'premium' ? t('premiumDesc') : t('freeDesc')}
-          </span>
-          {profile?.tier !== 'premium' && <span className="text-xs font-medium grad-text">{t('upgrade')} →</span>}
+          <span className="text-xs text-muted flex-1">{t('freeDesc')}</span>
         </div>
 
         <button onClick={signOut} className="btn-ghost w-full py-3 text-xs">{t('signOut')}</button>

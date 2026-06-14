@@ -61,7 +61,6 @@ export default function WalletPage() {
   const escrow = Number(balance.escrowed_balance || 0)
   const earned = Number(profile?.tc_earned_lifetime || 0)
   const spent = Number(profile?.tc_spent_lifetime || 0)
-  const isPremium = profile?.tier === 'premium'
 
   // derive a display row from a real ledger entry
   function derive(tx: any) {
@@ -115,17 +114,14 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* premium nudge — only for free tier; honest framing */}
-      {!isPremium && (
-        <div className="glass p-4 mb-5 flex items-center gap-3" style={{ border: '1px solid var(--tc-bd)' }}>
-          <div className="text-2xl">✦</div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-ink">{t('goPremium')}</div>
-            <div className="text-xs text-muted">{t('premiumPitch')}</div>
-          </div>
-          <button className="btn-grad px-3 py-2 text-xs whitespace-nowrap">{t('upgrade')} →</button>
+      {/* free-forever reassurance — TimeBank is free for individuals, no cap */}
+      <div className="glass p-4 mb-5 flex items-center gap-3" style={{ border: '1px solid var(--tc-bd)' }}>
+        <div className="text-2xl">✦</div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold text-ink">{t('goPremium')}</div>
+          <div className="text-xs text-muted">{t('premiumPitch')}</div>
         </div>
-      )}
+      </div>
 
       {/* activity */}
       <div className="glass overflow-hidden">
