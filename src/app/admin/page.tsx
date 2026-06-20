@@ -28,6 +28,7 @@ export default function AdminPage() {
   const [supportRequests, setSupportRequests] = useState<any[]>([])
   const [q, setQ] = useState('')
   const [editing, setEditing] = useState<any>(null)   // user being VIP-edited
+  const [pendingOnly, setPendingOnly] = useState(false)  // filter Users to not-yet-approved
 
   useEffect(() => {
     const supabase = createClient()
@@ -45,7 +46,7 @@ export default function AdminPage() {
   async function loadAll() {
     const supabase = createClient()
     const [usersRes, skillsRes, ledgerRes, sessionsRes, reportsRes, supportRes] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, location, city, country_code, level, xp, tc_available, tc_escrowed, sessions_taught, sessions_taken, is_vip, vip_title, headline_skill, is_admin, consent_research, created_at, signup_order').order('signup_order', { ascending: false }),
+      supabase.from('profiles').select('id, full_name, location, city, country_code, level, xp, tc_available, tc_escrowed, sessions_taught, sessions_taken, is_vip, vip_title, headline_skill, is_admin, is_approved, consent_research, created_at, signup_order').order('signup_order', { ascending: false }),
       supabase.from('skills').select('*').order('usage_count', { ascending: false }),
       supabase.from('tc_ledger').select('d_available, reason'),
       supabase.from('sessions').select('status, tc_released'),
@@ -73,6 +74,7 @@ export default function AdminPage() {
       countries: new Set(u.map(x => x.country_code).filter(Boolean)).size,
       openReports: (reportsRes.data || []).filter((r: any) => r.status === 'open').length,
       openSupport: (supportRes.data || []).filter((r: any) => r.status === 'open').length,
+      pendingApprovals: u.filter(x => !x.is_approved).length,
     })
   }
 
@@ -107,6 +109,14 @@ export default function AdminPage() {
     loadAll()
   }
 
+  async function setApproved(user: any, value: boolean) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc('admin_set_approved', { p_user_id: user.id, p_is_approved: value })
+    if (error) { toast(error.message, 'error'); return }
+    toast(value ? `${user.full_name || 'User'} approved` : 'Access revoked')
+    loadAll()
+  }
+
   async function moderateSkill(skill: any, patch: { category?: string; is_approved?: boolean }) {
     const supabase = createClient()
     const { error } = await supabase.rpc('admin_set_skill', {
@@ -128,7 +138,7 @@ export default function AdminPage() {
     </div>
   )
 
-  const filteredUsers = users.filter(u => !q || (u.full_name || '').toLowerCase().includes(q.toLowerCase()) || (u.city || '').toLowerCase().includes(q.toLowerCase()))
+  const filteredUsers = users.filter(u => (!pendingOnly || !u.is_approved) && (!q || (u.full_name || '').toLowerCase().includes(q.toLowerCase()) || (u.city || '').toLowerCase().includes(q.toLowerCase())))
   const filteredSkills = skills.filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase()))
   const filteredReports = reports.filter(r => !q
     || (r.reported?.full_name || '').toLowerCase().includes(q.toLowerCase())
@@ -183,6 +193,7 @@ export default function AdminPage() {
             { label: 'Completed', val: stats.sessionsCompleted, icon: '✓' },
             { label: 'Open reports', val: stats.openReports, icon: '⚑' },
             { label: 'Open support requests', val: stats.openSupport, icon: '💬' },
+            { label: 'Pending approvals', val: stats.pendingApprovals, icon: '⏳' },
           ].map(s => (
             <div key={s.label} className="glass p-4">
               <div className="text-xl mb-1">{s.icon}</div>
@@ -207,6 +218,14 @@ export default function AdminPage() {
       {/* USERS */}
       {tab === 'users' && (
         <div className="flex flex-col gap-2">
+          <div className="flex gap-1.5 mb-1">
+            <button onClick={() => setPendingOnly(false)} className="text-xs font-medium px-3 py-1.5 rounded-pill"
+              style={!pendingOnly ? { background: 'var(--grad)', color: '#fff' } : { background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>All</button>
+            <button onClick={() => setPendingOnly(true)} className="text-xs font-medium px-3 py-1.5 rounded-pill"
+              style={pendingOnly ? { background: 'var(--grad)', color: '#fff' } : { background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
+              Pending{stats?.pendingApprovals ? ` (${stats.pendingApprovals})` : ''}
+            </button>
+          </div>
           {filteredUsers.map(u => (
             <div key={u.id} className="glass p-4">
               <div className="flex items-center gap-3">
@@ -218,6 +237,7 @@ export default function AdminPage() {
                     {u.full_name || 'Unnamed'}
                     {u.is_vip && <span title="VIP">✦</span>}
                     {u.is_admin && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-pill" style={{ background: 'var(--tc-bg)', color: 'var(--tc-tx)' }}>ADMIN</span>}
+                    {!u.is_approved && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-pill" style={{ background: 'var(--request-bg)', color: 'var(--rose)' }}>PENDING</span>}
                   </div>
                   <div className="text-[11px] text-muted font-mono">
                     {u.city || u.location || '—'}{u.country_code ? `, ${u.country_code}` : ''} · L{u.level} · {Number(u.tc_available || 0)} TC · taught {u.sessions_taught || 0}

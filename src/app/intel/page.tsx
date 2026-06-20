@@ -21,6 +21,7 @@ export default function IntelPage() {
   const [demand, setDemand] = useState<any[]>([])
   const [geo, setGeo] = useState<any[]>([])
   const [signups, setSignups] = useState<any[]>([])
+  const [web, setWeb] = useState<any>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -31,15 +32,17 @@ export default function IntelPage() {
       if (!me?.is_admin) { setAllowed(false); return }
       setAllowed(true)
 
-      const [o, f, d, g, s] = await Promise.all([
+      const [o, f, d, g, s, w] = await Promise.all([
         supabase.rpc('intel_overview'),
         supabase.rpc('intel_funnel'),
         supabase.rpc('intel_skill_demand'),
         supabase.rpc('intel_geography'),
         supabase.rpc('intel_signups_by_day'),
+        supabase.rpc('intel_website'),
       ])
       setOv(o.data); setFunnel(f.data)
       setDemand(d.data || []); setGeo(g.data || []); setSignups(s.data || [])
+      setWeb(w.data)
     }
     init()
   }, [router])
@@ -199,6 +202,27 @@ export default function IntelPage() {
               </div>
             )}
           </div>
+
+          {/* MARKETING WEBSITE */}
+          {web && (
+            <div className="glass p-4">
+              <h3 className="font-display font-semibold text-base text-ink mb-3">Marketing website</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { l: 'Waitlist (all)', v: web.waitlist_total },
+                  { l: 'Waitlist (30d)', v: web.waitlist_30d },
+                  { l: 'Investor interest', v: web.investor_total },
+                  { l: 'Page views (7d)', v: web.pageviews_7d },
+                ].map(k => (
+                  <div key={k.l} className="text-center">
+                    <div className="font-display font-bold text-2xl text-ink">{Number(k.v ?? 0)}</div>
+                    <div className="text-[11px] text-muted">{k.l}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted mt-3">From timebank.academy — waitlist signups, investor-interest registrations, and page views.{Number(web.pending_users) > 0 ? ` · ${web.pending_users} account${Number(web.pending_users) === 1 ? '' : 's'} pending approval.` : ''}</p>
+            </div>
+          )}
 
           {/* EXPORT ALL */}
           <div className="glass p-4 flex items-center gap-3">
