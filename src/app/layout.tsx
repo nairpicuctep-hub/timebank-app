@@ -4,6 +4,7 @@ import CookieConsent from '@/components/CookieConsent'
 import { FeedbackHost } from '@/components/ui/Feedback'
 import AppSplash from '@/components/AppSplash'
 import PWARegister from '@/components/PWARegister'
+import TrackBeacon from '@/components/TrackBeacon'
 import AppFrame from '@/components/layout/AppFrame'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <FeedbackHost />
           <AppSplash />
           <PWARegister />
+          <TrackBeacon />
         </NextIntlClientProvider>
       </body>
     </html>

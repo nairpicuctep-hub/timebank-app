@@ -30,6 +30,8 @@ function writePrefs(p: Prefs) {
   // 6-month expiry, SameSite=Lax, first-party
   document.cookie = `${COOKIE}=${v}; path=/; max-age=${60 * 60 * 24 * 182}; SameSite=Lax`
   ;(window as any).__tbConsent = { analytics: p.analytics, marketing: p.marketing }
+  // let analytics (TrackBeacon) start/stop immediately on a consent change
+  try { window.dispatchEvent(new CustomEvent('tb-consent-changed')) } catch { /* ignore */ }
 }
 
 export default function CookieConsent() {
