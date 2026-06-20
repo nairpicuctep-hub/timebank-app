@@ -8,6 +8,7 @@ import BottomNav from '@/components/layout/BottomNav'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import SupportChat from '@/components/SupportChat'
 import PushToggle from '@/components/PushToggle'
+import StudentVerify from '@/components/StudentVerify'
 import { toast } from '@/components/ui/Feedback'
 import Link from 'next/link'
 
@@ -289,6 +290,9 @@ export default function ProfilePage() {
           </div>
           <span className="text-muted">→</span>
         </button>
+
+        {/* student verification — bonus credits + exam boosts */}
+        <StudentVerify />
 
         {/* push notifications (renders only where Web Push is supported) */}
         <PushToggle />

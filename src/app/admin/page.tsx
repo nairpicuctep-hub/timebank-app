@@ -15,7 +15,7 @@ import { toast } from '@/components/ui/Feedback'
    admin_set_skill) — never raw table writes from the client.
    ------------------------------------------------------------------------- */
 
-type Tab = 'overview' | 'users' | 'skills' | 'reports' | 'support' | 'notify'
+type Tab = 'overview' | 'users' | 'students' | 'skills' | 'reports' | 'support' | 'notify'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [skills, setSkills] = useState<any[]>([])
   const [reports, setReports] = useState<any[]>([])
   const [supportRequests, setSupportRequests] = useState<any[]>([])
+  const [students, setStudents] = useState<any[]>([])
   const [q, setQ] = useState('')
   const [editing, setEditing] = useState<any>(null)   // user being VIP-edited
   const [pendingOnly, setPendingOnly] = useState(false)  // filter Users to not-yet-approved
@@ -45,18 +46,20 @@ export default function AdminPage() {
 
   async function loadAll() {
     const supabase = createClient()
-    const [usersRes, skillsRes, ledgerRes, sessionsRes, reportsRes, supportRes] = await Promise.all([
+    const [usersRes, skillsRes, ledgerRes, sessionsRes, reportsRes, supportRes, studentsRes] = await Promise.all([
       supabase.from('profiles').select('id, full_name, location, city, country_code, level, xp, tc_available, tc_escrowed, sessions_taught, sessions_taken, is_vip, vip_title, headline_skill, is_admin, is_approved, consent_research, created_at, signup_order').order('signup_order', { ascending: false }),
       supabase.from('skills').select('*').order('usage_count', { ascending: false }),
       supabase.from('tc_ledger').select('d_available, reason'),
       supabase.from('sessions').select('status, tc_released'),
       supabase.from('user_reports').select('*, reporter:reporter_id(full_name), reported:reported_id(full_name)').order('created_at', { ascending: false }),
       supabase.from('support_requests').select('*, user:user_id(full_name)').order('created_at', { ascending: false }),
+      supabase.rpc('admin_student_queue'),
     ])
     setUsers(usersRes.data || [])
     setSkills(skillsRes.data || [])
     setReports(reportsRes.data || [])
     setSupportRequests(supportRes.data || [])
+    setStudents(studentsRes.data || [])
 
     const u = usersRes.data || []
     const s = skillsRes.data || []
@@ -75,6 +78,7 @@ export default function AdminPage() {
       openReports: (reportsRes.data || []).filter((r: any) => r.status === 'open').length,
       openSupport: (supportRes.data || []).filter((r: any) => r.status === 'open').length,
       pendingApprovals: u.filter(x => !x.is_approved).length,
+      pendingStudents: (studentsRes.data || []).filter((s: any) => s.status === 'pending').length,
     })
   }
 
@@ -120,6 +124,22 @@ export default function AdminPage() {
     if (!res.ok) { toast(j.error || 'Could not update approval', 'error'); return }
     toast(value ? `${user.full_name || 'User'} approved${j.emailed ? ' · email sent' : ''}` : 'Access revoked')
     loadAll()
+  }
+
+  async function setStudent(s: any, status: string) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc('admin_set_student', { p_user_id: s.user_id, p_status: status })
+    if (error) { toast(error.message, 'error'); return }
+    toast(status === 'verified' ? `${s.full_name || 'Student'} verified · 5 TC granted` : `Marked ${status}`)
+    loadAll()
+  }
+
+  async function viewStudentDoc(path: string) {
+    if (!path) { toast('No document on file.', 'error'); return }
+    const supabase = createClient()
+    const { data, error } = await supabase.storage.from('student-docs').createSignedUrl(path, 120)
+    if (error || !data?.signedUrl) { toast('Could not open document.', 'error'); return }
+    window.open(data.signedUrl, '_blank', 'noopener')
   }
 
   async function moderateSkill(skill: any, patch: { category?: string; is_approved?: boolean }) {
@@ -175,7 +195,7 @@ export default function AdminPage() {
 
       {/* tabs */}
       <div className="flex gap-1 p-1 rounded-pill glass mb-5">
-        {(['overview', 'users', 'skills', 'reports', 'support', 'notify'] as Tab[]).map(t => (
+        {(['overview', 'users', 'students', 'skills', 'reports', 'support', 'notify'] as Tab[]).map(t => (
           <button key={t} onClick={() => { setTab(t); setQ('') }}
             className="flex-1 py-2 rounded-pill text-xs font-semibold capitalize transition-all"
             style={tab === t ? { background: 'var(--grad)', color: '#fff' } : { color: 'var(--muted)' }}>
@@ -199,6 +219,7 @@ export default function AdminPage() {
             { label: 'Open reports', val: stats.openReports, icon: '⚑' },
             { label: 'Open support requests', val: stats.openSupport, icon: '💬' },
             { label: 'Pending approvals', val: stats.pendingApprovals, icon: '⏳' },
+            { label: 'Pending students', val: stats.pendingStudents, icon: '🎓' },
           ].map(s => (
             <div key={s.label} className="glass p-4">
               <div className="text-xl mb-1">{s.icon}</div>
@@ -213,7 +234,7 @@ export default function AdminPage() {
       )}
 
       {/* search (users + skills) */}
-      {tab !== 'overview' && tab !== 'notify' && (
+      {tab !== 'overview' && tab !== 'notify' && tab !== 'students' && (
         <div className="relative mb-3">
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={`Search ${tab}…`} style={{ paddingLeft: 38, fontSize: 13 }} />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">⌕</span>
@@ -383,6 +404,34 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* STUDENTS — verification queue + exam-season boost */}
+      {tab === 'students' && (
+        <div className="flex flex-col gap-3">
+          <ExamBoost onDone={loadAll} />
+          {students.length === 0 ? (
+            <div className="glass p-6 text-center"><p className="text-sm text-muted">No student submissions yet.</p></div>
+          ) : students.map((s) => {
+            const sc = (({ pending: { bg: 'var(--request-bg)', tx: 'var(--rose)' }, verified: { bg: 'var(--mint-bg)', tx: 'var(--mint)' }, rejected: { bg: 'var(--cream-2)', tx: 'var(--muted)' } } as Record<string, { bg: string; tx: string }>)[s.status]) || { bg: 'var(--cream-2)', tx: 'var(--muted)' }
+            return (
+              <div key={s.user_id} className="glass p-4">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="text-sm font-semibold text-ink truncate">🎓 {s.full_name || 'Unnamed'}</div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-pill flex-shrink-0" style={{ background: sc.bg, color: sc.tx }}>{s.status}</span>
+                </div>
+                <div className="text-[11px] text-muted font-mono mb-2">
+                  {s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  <button onClick={() => viewStudentDoc(s.doc_path)} className="text-xs font-medium px-3 py-1.5 rounded-pill" style={{ background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>View document</button>
+                  {s.status !== 'verified' && <button onClick={() => setStudent(s, 'verified')} className="text-xs font-medium px-3 py-1.5 rounded-pill" style={{ background: 'var(--grad)', color: '#fff' }}>Verify (+5 TC)</button>}
+                  {s.status !== 'rejected' && <button onClick={() => setStudent(s, 'rejected')} className="text-xs font-medium px-3 py-1.5 rounded-pill" style={{ background: 'var(--cream-2)', color: 'var(--muted)', border: '1px solid var(--line)' }}>Reject</button>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {/* NOTIFY — push broadcast to all subscribed devices */}
       {tab === 'notify' && <Broadcast />}
     </div>
@@ -442,6 +491,37 @@ function Broadcast() {
           {busy ? 'Sending…' : 'Send to all'}
         </button>
         {result && <p className="text-xs font-mono text-muted text-center">{result}</p>}
+      </div>
+    </div>
+  )
+}
+
+/* Exam-season boost — grant N TC to every verified student (exam_boost RPC). */
+function ExamBoost({ onDone }: { onDone: () => void }) {
+  const [amount, setAmount] = useState('2')
+  const [busy, setBusy] = useState(false)
+  async function run() {
+    const n = Number(amount)
+    if (!n || n <= 0) { toast('Enter a positive amount.', 'error'); return }
+    if (!window.confirm(`Grant ${n} TC to every verified student?`)) return
+    setBusy(true)
+    const supabase = createClient()
+    const { data, error } = await supabase.rpc('exam_boost', { p_amount: n })
+    setBusy(false)
+    if (error) { toast(error.message, 'error'); return }
+    toast(`Exam boost sent to ${data} student${data === 1 ? '' : 's'}`, 'success')
+    onDone()
+  }
+  return (
+    <div className="glass p-4 flex flex-col gap-3">
+      <div>
+        <div className="text-sm font-semibold text-ink mb-1">📚 Exam-season boost</div>
+        <p className="text-xs text-muted">Grant bonus TimeCredits to every verified student. Use this during exam periods.</p>
+      </div>
+      <div className="flex gap-2 items-center">
+        <input type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)} style={{ fontSize: 13, width: 90 }} />
+        <span className="text-xs text-muted">TC each</span>
+        <button onClick={run} disabled={busy} className="btn-grad ml-auto px-4 py-2 text-xs disabled:opacity-50">{busy ? 'Granting…' : 'Grant to all verified'}</button>
       </div>
     </div>
   )
