@@ -110,10 +110,15 @@ export default function AdminPage() {
   }
 
   async function setApproved(user: any, value: boolean) {
-    const supabase = createClient()
-    const { error } = await supabase.rpc('admin_set_approved', { p_user_id: user.id, p_is_approved: value })
-    if (error) { toast(error.message, 'error'); return }
-    toast(value ? `${user.full_name || 'User'} approved` : 'Access revoked')
+    // Goes through /api/admin/approve so approving also sends the branded
+    // "you're in" email (Brevo, server-side).
+    const res = await fetch('/api/admin/approve', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, approve: value }),
+    })
+    const j = await res.json().catch(() => ({}))
+    if (!res.ok) { toast(j.error || 'Could not update approval', 'error'); return }
+    toast(value ? `${user.full_name || 'User'} approved${j.emailed ? ' · email sent' : ''}` : 'Access revoked')
     loadAll()
   }
 
