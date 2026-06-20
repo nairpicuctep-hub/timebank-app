@@ -24,27 +24,32 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   if (ALLOW.some(p => pathname === p || pathname.startsWith(p + '/') || pathname.startsWith(p))) return res
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return request.cookies.get(name)?.value },
-        set(name: string, value: string, options: CookieOptions) { res.cookies.set({ name, value, ...options }) },
-        remove(name: string, options: CookieOptions) { res.cookies.set({ name, value: '', ...options }) },
-      },
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) { return request.cookies.get(name)?.value },
+          set(name: string, value: string, options: CookieOptions) { res.cookies.set({ name, value, ...options }) },
+          remove(name: string, options: CookieOptions) { res.cookies.set({ name, value: '', ...options }) },
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+    // Not signed in → let the page's own /auth redirect handle it.
+    if (!user) return res
+
+    const { data: profile } = await supabase.from('profiles').select('is_approved').eq('id', user.id).single()
+    if (profile && profile.is_approved === false) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/pending'
+      return NextResponse.redirect(url)
     }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-  // Not signed in → let the page's own /auth redirect handle it.
-  if (!user) return res
-
-  const { data: profile } = await supabase.from('profiles').select('is_approved').eq('id', user.id).single()
-  if (profile && profile.is_approved === false) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/pending'
-    return NextResponse.redirect(url)
+  } catch {
+    // Fail open: never let a transient auth/DB error take the app down.
+    return res
   }
 
   return res
