@@ -3,7 +3,7 @@
    - same-origin static assets: cache-first (stale-while-revalidate-ish).
    - never touches /api/* or cross-origin (Supabase/Gemini/JaaS) requests.
    Bump CACHE to invalidate. skipWaiting + clients.claim keep it self-updating. */
-const CACHE = 'tb-shell-v1'
+const CACHE = 'tb-shell-v2'
 const SHELL = ['/', '/home', '/icon-192.png', '/LOGO_Timebank_Academy.png']
 
 self.addEventListener('install', (e) => {
@@ -41,5 +41,36 @@ self.addEventListener('fetch', (e) => {
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(request, copy)) }
       return res
     }))
+  )
+})
+
+/* ---- Web Push: show the notification, even when the app is closed ---- */
+self.addEventListener('push', (e) => {
+  let data = {}
+  try { data = e.data ? e.data.json() : {} }
+  catch { data = { body: e.data && e.data.text ? e.data.text() : '' } }
+  const title = data.title || 'TimeBank Academy'
+  const options = {
+    body: data.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: data.url || '/home' },
+    tag: data.tag || undefined,
+    renotify: !!data.tag,
+  }
+  e.waitUntil(self.registration.showNotification(title, options))
+})
+
+/* ---- Tapping a notification focuses an open tab or opens the target ---- */
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  const target = (e.notification.data && e.notification.data.url) || '/home'
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ('focus' in c) { try { c.navigate(target) } catch (_) {} return c.focus() }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target)
+    })
   )
 })

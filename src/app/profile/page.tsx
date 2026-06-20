@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import BottomNav from '@/components/layout/BottomNav'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import SupportChat from '@/components/SupportChat'
+import PushToggle from '@/components/PushToggle'
 import { toast } from '@/components/ui/Feedback'
 import Link from 'next/link'
 
@@ -288,6 +289,9 @@ export default function ProfilePage() {
           </div>
           <span className="text-muted">→</span>
         </button>
+
+        {/* push notifications (renders only where Web Push is supported) */}
+        <PushToggle />
 
         {/* language */}
         <div className="glass p-4 flex items-center justify-between gap-3">

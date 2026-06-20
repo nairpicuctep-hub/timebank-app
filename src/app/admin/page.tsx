@@ -15,7 +15,7 @@ import { toast } from '@/components/ui/Feedback'
    admin_set_skill) — never raw table writes from the client.
    ------------------------------------------------------------------------- */
 
-type Tab = 'overview' | 'users' | 'skills' | 'reports' | 'support'
+type Tab = 'overview' | 'users' | 'skills' | 'reports' | 'support' | 'notify'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -170,7 +170,7 @@ export default function AdminPage() {
 
       {/* tabs */}
       <div className="flex gap-1 p-1 rounded-pill glass mb-5">
-        {(['overview', 'users', 'skills', 'reports', 'support'] as Tab[]).map(t => (
+        {(['overview', 'users', 'skills', 'reports', 'support', 'notify'] as Tab[]).map(t => (
           <button key={t} onClick={() => { setTab(t); setQ('') }}
             className="flex-1 py-2 rounded-pill text-xs font-semibold capitalize transition-all"
             style={tab === t ? { background: 'var(--grad)', color: '#fff' } : { color: 'var(--muted)' }}>
@@ -208,7 +208,7 @@ export default function AdminPage() {
       )}
 
       {/* search (users + skills) */}
-      {tab !== 'overview' && (
+      {tab !== 'overview' && tab !== 'notify' && (
         <div className="relative mb-3">
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={`Search ${tab}…`} style={{ paddingLeft: 38, fontSize: 13 }} />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">⌕</span>
@@ -377,6 +377,67 @@ export default function AdminPage() {
           })}
         </div>
       )}
+
+      {/* NOTIFY — push broadcast to all subscribed devices */}
+      {tab === 'notify' && <Broadcast />}
+    </div>
+  )
+}
+
+/* Push broadcast — sends a Web Push to every subscribed device via
+   /api/push/broadcast (admin-gated server-side). */
+function Broadcast() {
+  const [title, setTitle] = useState('')
+  const [message, setMessage] = useState('')
+  const [url, setUrl] = useState('/home')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+
+  async function send() {
+    if (!title.trim() || !message.trim()) { toast('Title and message are required.', 'error'); return }
+    if (!window.confirm('Send this notification to ALL subscribed users?')) return
+    setBusy(true); setResult(null)
+    try {
+      const res = await fetch('/api/push/broadcast', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), body: message.trim(), url: url.trim() || '/home' }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { toast(j.error || 'Failed to send.', 'error'); return }
+      setResult(`Sent ${j.sent}/${j.total} · ${j.failed} failed${j.pruned ? ` · ${j.pruned} pruned` : ''}`)
+      toast('Broadcast sent.', 'success')
+    } catch {
+      toast('Failed to send.', 'error')
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="glass p-4 flex flex-col gap-3">
+        <div>
+          <div className="text-sm font-semibold text-ink mb-1">📣 Send a push notification</div>
+          <p className="text-xs text-muted">Goes to every device that opted in (Profile → Notifications). Use sparingly — e.g. launch news, exam-period credit boosts.</p>
+        </div>
+        <div>
+          <label className="text-[10px] font-mono uppercase tracking-widest text-faint">Title</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} maxLength={80}
+            placeholder="Exam season is here 📚" style={{ fontSize: 13 }} />
+        </div>
+        <div>
+          <label className="text-[10px] font-mono uppercase tracking-widest text-faint">Message</label>
+          <textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={200} rows={3}
+            placeholder="Earn bonus TimeCredits for every hour you teach this week." style={{ fontSize: 13 }} />
+        </div>
+        <div>
+          <label className="text-[10px] font-mono uppercase tracking-widest text-faint">Opens (path)</label>
+          <input value={url} onChange={e => setUrl(e.target.value)}
+            placeholder="/home" style={{ fontSize: 13 }} />
+        </div>
+        <button onClick={send} disabled={busy} className="btn-grad w-full py-3 text-sm disabled:opacity-50">
+          {busy ? 'Sending…' : 'Send to all'}
+        </button>
+        {result && <p className="text-xs font-mono text-muted text-center">{result}</p>}
+      </div>
     </div>
   )
 }
